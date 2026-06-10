@@ -1,0 +1,67 @@
+.story-journal {
+  position: fixed;
+  right: 1.5rem;
+  bottom: 1.5rem;
+  width: 260px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  background: rgba(10, 10, 15, 0.92);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(8px);
+  z-index: 50;
+}
+
+.story-journal__title {
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  letter-spacing: 0.2em;
+  color: var(--text-muted);
+  margin: 0 0 0.75rem;
+  font-weight: 500;
+}
+
+.story-journal__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.story-journal__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.story-journal__item:last-child {
+  border-bottom: none;
+}
+
+.story-journal__chapter {
+  font-size: 0.65rem;
+  color: var(--accent-gold);
+  letter-spacing: 0.1em;
+}
+
+.story-journal__scene {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.story-journal__action {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.story-journal__action--custom {
+  color: var(--accent-gold);
+}
+
+@media (max-width: 900px) {
+  .story-journal {
+    display: none;
+  }
+}

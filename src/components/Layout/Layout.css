@@ -1,0 +1,124 @@
+.layout {
+  --layout-header-height: 4.25rem;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  position: relative;
+  background: var(--bg-deep);
+  overflow: hidden;
+}
+
+.layout__grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  z-index: 1000;
+}
+
+.layout__header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  background: rgba(10, 10, 15, 0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.layout__logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.layout__logo-mark {
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  color: var(--accent-gold);
+  border: 1px solid var(--accent-gold-dim);
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.layout__logo-text {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  letter-spacing: 0.08em;
+}
+
+.layout__header-right {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.layout__ai-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+
+.layout__ai-badge--live {
+  border-color: var(--accent-emerald);
+  color: var(--accent-emerald);
+}
+
+.layout__tickets {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  background: rgba(201, 162, 39, 0.12);
+  border: 1px solid var(--accent-gold-dim);
+}
+
+.layout__tickets-icon {
+  font-size: 0.9rem;
+}
+
+.layout__tickets-value {
+  font-family: var(--font-ui);
+  font-weight: 600;
+  color: var(--accent-gold);
+}
+
+.layout__main {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.layout__main:has(.story-play) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .layout__header {
+    padding: 0.75rem 1rem;
+  }
+
+  .layout__logo-text {
+    display: none;
+  }
+}

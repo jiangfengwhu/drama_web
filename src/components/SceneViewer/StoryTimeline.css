@@ -1,0 +1,187 @@
+.wechat-chat {
+  --chat-padding-inline: 0.75rem;
+  --chat-avatar-size: 40px;
+  --chat-row-gap: 0.6rem;
+  /* 对侧头像道：40px 头像 + 0.6rem 间距 ≈ 50px */
+  --chat-opposite-lane: calc(var(--chat-avatar-size) + var(--chat-row-gap));
+  /* 行内气泡可用宽 = 行宽 − 本侧头像 − 间距 − 对侧头像道 */
+  --chat-bubble-lane-width: calc(
+    100% - var(--chat-avatar-size) - var(--chat-row-gap) - var(--chat-opposite-lane)
+  );
+
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 0.85rem var(--chat-padding-inline) 1.25rem;
+  font-family: var(--font-chat);
+  background: #101014;
+  background-image:
+    radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(76, 201, 122, 0.06) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle at 80% 100%,
+      rgba(91, 141, 239, 0.04) 0%,
+      transparent 40%
+    );
+}
+
+.wechat-chat__system {
+  display: flex;
+  justify-content: center;
+  padding: 0.2rem 0;
+}
+
+.wechat-chat__system-text {
+  display: inline-block;
+  max-width: 88%;
+  padding: 0.45rem 1rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.wechat-chat__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--chat-row-gap);
+  width: 100%;
+  max-width: 100%;
+}
+
+.wechat-chat__row--self {
+  justify-content: flex-end;
+}
+
+.wechat-chat__row--other {
+  justify-content: flex-start;
+}
+
+.wechat-chat__avatar {
+  flex-shrink: 0;
+  width: var(--chat-avatar-size);
+  height: var(--chat-avatar-size);
+  border-radius: 50%;
+  background: var(--avatar-gradient);
+  color: var(--avatar-text);
+  font-family: var(--font-chat);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 0 0 2px var(--avatar-ring),
+    0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.wechat-chat__other-body,
+.wechat-chat__self-body {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: var(--chat-bubble-lane-width);
+}
+
+.wechat-chat__other-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.wechat-chat__self-body {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.wechat-chat__name {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--name-accent, rgba(255, 255, 255, 0.55));
+  margin-bottom: 0.28rem;
+  padding-left: 0.35rem;
+  max-width: 100%;
+}
+
+.wechat-chat__bubble {
+  position: relative;
+  max-width: 100%;
+  width: fit-content;
+  padding: 0.65rem 0.95rem;
+  border-radius: 20px;
+  word-break: break-word;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.wechat-chat__bubble p {
+  margin: 0;
+  font-size: 0.94rem;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+}
+
+.wechat-chat__bubble--self {
+  background: linear-gradient(145deg, #4cc97a, #38a866);
+  color: #f0fff5;
+  border-bottom-right-radius: 6px;
+  box-shadow:
+    0 2px 12px rgba(56, 168, 102, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.wechat-chat__bubble--self p {
+  color: inherit;
+}
+
+.wechat-chat__bubble--other {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom-left-radius: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.wechat-chat__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0;
+}
+
+.wechat-chat__loading-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.38);
+  animation: wechatLoadingPulse 1.2s ease-in-out infinite;
+}
+
+.wechat-chat__loading-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.wechat-chat__loading-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes wechatLoadingPulse {
+  0%,
+  60%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.4;
+  }
+  30% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

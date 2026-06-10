@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@400;600&display=swap');
+
+:root {
+  --bg-deep: #0a0a0f;
+  --bg-panel: #12121a;
+  --text-primary: #f5f0e8;
+  --text-secondary: rgba(245, 240, 232, 0.75);
+  --text-muted: rgba(245, 240, 232, 0.45);
+  --accent-gold: #c9a227;
+  --accent-gold-dim: rgba(201, 162, 39, 0.4);
+  --accent-rose: #e8a0bf;
+  --accent-emerald: #6ee7b7;
+  --border-subtle: rgba(245, 240, 232, 0.1);
+
+  --font-sans: 'Noto Sans SC', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --font-display: 'Cormorant Garamond', 'Noto Serif SC', serif;
+  --font-body: var(--font-sans);
+  --font-ui: var(--font-sans);
+  --font-chat: var(--font-sans);
+
+  font-family: var(--font-body);
+  line-height: 1.6;
+  font-weight: 400;
+  color: var(--text-primary);
+  background-color: var(--bg-deep);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  height: 100%;
+  max-height: 100dvh;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 0;
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+  background: var(--bg-deep);
+}
+
+#root {
+  min-height: 0;
+  height: 100%;
+  max-height: 100dvh;
+  overflow: hidden;
+}
+
+button {
+  font-family: inherit;
+}
+
+input {
+  font-family: inherit;
+}
+
+::selection {
+  background: rgba(201, 162, 39, 0.35);
+  color: var(--text-primary);
+}
