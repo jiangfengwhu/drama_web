@@ -1,10 +1,10 @@
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { getAvatarTheme } from '../../services/avatar-theme.util';
 import type { StoryTimelineItem } from '../../types/story-timeline.types';
 import './StoryTimeline.css';
 
 interface StoryTimelineProps {
   items: StoryTimelineItem[];
-  isLoading?: boolean;
 }
 
 function ChatAvatar({
@@ -41,27 +41,26 @@ function SystemTip({ text }: { text: string }) {
   );
 }
 
-function ChatLoading() {
-  return (
-    <div className="wechat-chat__loading" role="status" aria-live="polite">
-      <span className="wechat-chat__loading-dot" />
-      <span className="wechat-chat__loading-dot" />
-      <span className="wechat-chat__loading-dot" />
-    </div>
-  );
-}
-
 function ChatBubble({ item }: { item: StoryTimelineItem }) {
   const isSelf = Boolean(item.isProtagonist);
   const senderName = item.sender ?? '未知';
   const theme = getAvatarTheme(senderName, isSelf);
+
+  const bubbleBody = (
+    <>
+      {item.stageDirection ? (
+        <p className="wechat-chat__stage-direction">{item.stageDirection}</p>
+      ) : null}
+      <p>{item.text}</p>
+    </>
+  );
 
   if (isSelf) {
     return (
       <div className="wechat-chat__row wechat-chat__row--self">
         <div className="wechat-chat__self-body">
           <div className="wechat-chat__bubble wechat-chat__bubble--self">
-            <p>{item.text}</p>
+            {bubbleBody}
           </div>
         </div>
         <ChatAvatar name={senderName} isProtagonist />
@@ -80,28 +79,61 @@ function ChatBubble({ item }: { item: StoryTimelineItem }) {
           {senderName}
         </span>
         <div className="wechat-chat__bubble wechat-chat__bubble--other">
-          <p>{item.text}</p>
+          {bubbleBody}
         </div>
       </div>
     </div>
   );
 }
 
-export function StoryTimeline({
-  items,
-  isLoading = false,
-}: StoryTimelineProps) {
-  if (items.length === 0 && !isLoading) return null;
+function TimelineEntry({
+  item,
+  animate,
+}: {
+  item: StoryTimelineItem;
+  animate: boolean;
+}) {
+  const className = animate
+    ? 'wechat-chat__entry wechat-chat__entry--pop'
+    : 'wechat-chat__entry';
+
+  if (item.kind === 'scene' || item.kind === 'narration') {
+    return (
+      <div className={className}>
+        <SystemTip text={item.text} />
+      </div>
+    );
+  }
+
+  return (
+    <div className={className}>
+      <ChatBubble item={item} />
+    </div>
+  );
+}
+
+export function StoryTimeline({ items }: StoryTimelineProps) {
+  const seenIdsRef = useRef(new Set<string>());
+
+  useEffect(() => {
+    if (items.length === 0) seenIdsRef.current.clear();
+  }, [items.length]);
+
+  useLayoutEffect(() => {
+    items.forEach((item) => seenIdsRef.current.add(item.id));
+  }, [items]);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="wechat-chat">
-      {items.map((item) => {
-        if (item.kind === 'scene' || item.kind === 'narration') {
-          return <SystemTip key={item.id} text={item.text} />;
-        }
-        return <ChatBubble key={item.id} item={item} />;
-      })}
-      {isLoading && <ChatLoading />}
+      {items.map((item) => (
+        <TimelineEntry
+          key={item.id}
+          item={item}
+          animate={!seenIdsRef.current.has(item.id)}
+        />
+      ))}
     </div>
   );
 }

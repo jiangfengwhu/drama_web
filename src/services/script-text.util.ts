@@ -1,3 +1,5 @@
+import { EMOTION_SLIDER_OPTION_COUNT } from '../constants/interaction.const';
+import { DEFAULT_EMOTION_LINES } from '../constants/prompt-format.const';
 import {
   SCRIPT_FIELD_SEP,
   SCRIPT_LINE,
@@ -8,7 +10,6 @@ import {
   isRelationBulletLine,
   mergeGuideSnapshots,
   parseGuideLine,
-  parsePartialGuideLine,
   type GuideSnapshot,
 } from './guide-text.util';
 import type { ScriptLine } from '../types/script.types';
@@ -21,6 +22,7 @@ type ProtocolTag = (typeof PROTOCOL_TAGS)[number];
 export interface TurnMetaSnapshot {
   mood?: SceneMood;
   isComplete?: boolean;
+  attitudeCards?: string[];
 }
 
 const META_PREFIXES = [
@@ -28,6 +30,7 @@ const META_PREFIXES = [
   'ATMOSPHERE:',
   'MOOD:',
   'COMPLETE:',
+  'CARD:',
   'IMAGE_PROMPT:',
   'INNER:',
   'CHARACTERS:',
@@ -87,6 +90,9 @@ export function parseTurnMetaLine(raw: string): TurnMetaSnapshot | null {
   const completeMatch = trimmed.match(/^COMPLETE\s*[：:]\s*(.+)$/i);
   if (completeMatch) return { isComplete: parseYesNo(completeMatch[1]) };
 
+  const cardText = parseCardLine(trimmed);
+  if (cardText) return { attitudeCards: [cardText] };
+
   return null;
 }
 
@@ -94,7 +100,59 @@ export function mergeTurnMetaSnapshots(
   base: TurnMetaSnapshot,
   patch: TurnMetaSnapshot,
 ): TurnMetaSnapshot {
-  return { ...base, ...patch };
+  const attitudeCards =
+    patch.attitudeCards !== undefined
+      ? [...(base.attitudeCards ?? []), ...patch.attitudeCards]
+      : base.attitudeCards;
+
+  return {
+    ...base,
+    ...patch,
+    attitudeCards,
+  };
+}
+
+/** 解析 CARD: 情绪滑动条台词行（不进入聊天展示） */
+export function parseCardLine(raw: string): string | null {
+  const trimmed = raw.trim().replace(/^[-*•]\s*/, '');
+  const match = trimmed.match(/^CARD\s*[：:]\s*(.+)$/i);
+  return match?.[1]?.trim() || null;
+}
+
+/** 从 MSG 正文拆出括号内微动作/神态与台词 */
+export function parseMsgStageDirection(message: string): {
+  stageDirection?: string;
+  dialogue: string;
+} {
+  const trimmed = message.trim();
+  const match = trimmed.match(/^[（(]([^）)]*)[）)]\s*(.+)$/s);
+  if (match?.[2]?.trim()) {
+    return {
+      stageDirection: match[1].trim(),
+      dialogue: match[2].trim(),
+    };
+  }
+  return { dialogue: trimmed };
+}
+
+export function normalizeAttitudeCards(
+  cards: string[] | undefined,
+  audience: 'male' | 'female' = 'male',
+): string[] {
+  const defaults = [...DEFAULT_EMOTION_LINES[audience]];
+  const unique = [...new Set(cards?.map((c) => c.trim()).filter(Boolean) ?? [])];
+  const padded = [...unique];
+
+  for (const line of defaults) {
+    if (padded.length >= EMOTION_SLIDER_OPTION_COUNT) break;
+    if (!padded.includes(line)) padded.push(line);
+  }
+
+  while (padded.length < EMOTION_SLIDER_OPTION_COUNT) {
+    padded.push(defaults[padded.length % defaults.length]);
+  }
+
+  return padded.slice(0, EMOTION_SLIDER_OPTION_COUNT);
 }
 
 function isMetaLine(trimmed: string): boolean {
@@ -102,16 +160,35 @@ function isMetaLine(trimmed: string): boolean {
   return META_PREFIXES.some((p) => upper.startsWith(p));
 }
 
+function buildMsgLine(sender: string, message: string): ScriptLine {
+  const { stageDirection, dialogue } = parseMsgStageDirection(message);
+  return {
+    kind: 'msg',
+    sender,
+    message: dialogue,
+    stageDirection,
+  };
+}
+
 function parseMsgFields(body: string): { sender: string; message: string } | null {
+  const normalized = body.trim().replace(/^["「『]|["」』]$/g, '');
+
   for (const sep of MSG_FIELD_SEPS) {
-    const idx = body.indexOf(sep);
+    const idx = normalized.indexOf(sep);
     if (idx <= 0) continue;
-    const sender = body.slice(0, idx).trim();
-    const message = body.slice(idx + sep.length).trim();
+    const sender = normalized.slice(0, idx).trim();
+    const message = normalized.slice(idx + sep.length).trim();
     if (sender && message) return { sender, message };
   }
 
-  const colonMatch = body.match(/^([^：:|\s]{1,16})[：:]\s*(.+)$/);
+  const nameParenMatch = normalized.match(
+    /^([\u4e00-\u9fa5·]{1,10})\s*([（(].+)$/s,
+  );
+  if (nameParenMatch?.[2]?.trim()) {
+    return { sender: nameParenMatch[1].trim(), message: nameParenMatch[2].trim() };
+  }
+
+  const colonMatch = normalized.match(/^([^：:|\s]{1,16})[：:]\s*(.+)$/);
   if (colonMatch) {
     const sender = colonMatch[1].trim();
     const message = colonMatch[2].trim();
@@ -129,7 +206,7 @@ function parseLegacyRole(body: string): ScriptLine | null {
   const message = parts.slice(1).filter(Boolean).join(' ').trim();
   if (!message) return null;
 
-  return { kind: 'msg', sender, message };
+  return buildMsgLine(sender, message);
 }
 
 function parseBareDialogue(trimmed: string): ScriptLine | null {
@@ -137,7 +214,7 @@ function parseBareDialogue(trimmed: string): ScriptLine | null {
 
   const bracket = trimmed.match(/^【([^】]{1,16})】\s*(.+)$/);
   if (bracket) {
-    return { kind: 'msg', sender: bracket[1].trim(), message: bracket[2].trim() };
+    return buildMsgLine(bracket[1].trim(), bracket[2].trim());
   }
 
   const colon = trimmed.match(/^([^：:\s【】]{1,16})[：:]\s*(.+)$/);
@@ -145,7 +222,7 @@ function parseBareDialogue(trimmed: string): ScriptLine | null {
     const sender = colon[1].trim();
     const message = colon[2].trim();
     if (sender && message && !/^\d/.test(sender)) {
-      return { kind: 'msg', sender, message };
+      return buildMsgLine(sender, message);
     }
   }
 
@@ -183,7 +260,17 @@ export function parsePartialTailScriptLine(tail: string): ScriptLine | null {
   }
 
   if (tag === 'MSG') {
-    return parsePartialMsgFields(normalized.slice('MSG:'.length));
+    const partial = parsePartialMsgFields(normalized.slice('MSG:'.length));
+    if (!partial?.sender) return partial;
+    const { stageDirection, dialogue } = parseMsgStageDirection(
+      partial.message ?? '',
+    );
+    return {
+      kind: 'msg',
+      sender: partial.sender,
+      message: dialogue,
+      stageDirection,
+    };
   }
 
   return null;
@@ -237,7 +324,7 @@ function parseScriptLine(raw: string): ScriptLine | null {
     const body = normalized.slice('MSG:'.length).trim();
     const fields = parseMsgFields(body);
     if (!fields) return null;
-    return { kind: 'msg', sender: fields.sender, message: fields.message };
+    return buildMsgLine(fields.sender, fields.message);
   }
 
   if (tag === 'ROLE') {
@@ -319,9 +406,7 @@ export function parseScriptStream(buffer: string): {
     if (parsed) lines.push(parsed);
   }
 
-  const tailGuide = parsePartialGuideLine(tail);
-  if (tailGuide) guide = mergeGuideSnapshots(guide, tailGuide);
-
+  /* 未完成行不并入 guide，避免左侧概览逐字闪烁；整行换行后再展示 */
   return { lines, guide, turnMeta, tail };
 }
 
@@ -342,7 +427,8 @@ export function serializeScriptLines(lines: ScriptLine[]): string {
     .map((line) => {
       if (line.kind === 'scene') return `${SCRIPT_LINE.SCENE} ${line.text ?? ''}`;
       if (line.kind === 'narr') return `${SCRIPT_LINE.NARR} ${line.text ?? ''}`;
-      return `${SCRIPT_LINE.MSG} ${line.sender}${SCRIPT_FIELD_SEP}${line.message ?? ''}`;
+      const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
+      return `${SCRIPT_LINE.MSG} ${line.sender}${SCRIPT_FIELD_SEP}${action}${line.message ?? ''}`;
     })
     .join('\n');
 }
@@ -379,6 +465,7 @@ export function scriptLinesToTimeline(
         kind: 'msg' as const,
         sender: isProtagonist ? protagonistName : (line.sender ?? '未知'),
         text: line.message ?? '',
+        stageDirection: line.stageDirection,
         isProtagonist,
       };
     })
@@ -413,7 +500,7 @@ export function timelineVisibleLength(items: StoryTimelineItem[]): number {
   return items.reduce((sum, item) => sum + item.text.length, 0);
 }
 
-/** 群公告已展示 SCENE，聊天区不再重复 */
+/** 概览区已展示 SCENE，对话区不再重复 */
 export function stripSceneLines(lines: ScriptLine[]): ScriptLine[] {
   return lines.filter((line) => line.kind !== 'scene');
 }
@@ -465,7 +552,8 @@ export function formatChatHistory(
       const sender = isProtagonistSender(line.sender ?? '', protagonistName)
         ? '你'
         : line.sender;
-      return `${sender}: ${line.message ?? ''}`;
+      const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
+      return `${sender}: ${action}${line.message ?? ''}`;
     })
     .join('\n');
 }

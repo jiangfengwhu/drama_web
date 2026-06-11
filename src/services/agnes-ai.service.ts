@@ -112,8 +112,9 @@ export async function* chatCompletionStream(
     body: JSON.stringify({
       model: AGNES_MODEL,
       messages: options.messages,
-      temperature: options.temperature ?? 0.85,
-      max_tokens: options.maxTokens ?? 2048,
+      // temperature: options.temperature ?? 0.85,
+      temperature: 1,
+      // max_tokens: options.maxTokens ?? 2048,
       stream: true,
     }),
   });

@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom';
+import logoUrl from '../../assets/logo.jpg';
+import { APP_NAME } from '../../constants/app-brand.const';
 import { isAgnesConfigured } from '../../services/agnes-ai.service';
 import './Layout.css';
 
@@ -17,8 +19,14 @@ export function Layout({ children, tickets, showNav = true }: LayoutProps) {
       {showNav && (
         <header className="layout__header">
           <Link to="/" className="layout__logo">
-            <span className="layout__logo-mark">序</span>
-            <span className="layout__logo-text">新纪元 · 互动短剧</span>
+            <img
+              src={logoUrl}
+              alt=""
+              className="layout__logo-img"
+              width={40}
+              height={40}
+            />
+            <span className="layout__logo-text">{APP_NAME}</span>
           </Link>
           <div className="layout__header-right">
             <span className={`layout__ai-badge ${isAgnesConfigured() ? 'layout__ai-badge--live' : ''}`}>

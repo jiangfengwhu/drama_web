@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useEffect, useState, type ReactNode } from 'react';
 import {
   MOBILE_BREAKPOINT_PX,
   STORY_BRIEF_SECTION,
 } from '../../constants/story-brief.const';
+import { useBriefRevealQueue } from '../../hooks/useBriefRevealQueue';
 import { buildSceneBriefText, parseRelationLines } from '../../services/story-brief.util';
 import type { RelationItem } from '../../services/story-brief.util';
 import type { StoryBackground } from '../../types/story.types';
@@ -13,7 +14,14 @@ interface StoryBriefPanelProps {
   protagonistName: string;
   themeTitle?: string;
   turnLabel: string;
+  guideStreaming?: boolean;
 }
+
+type BriefRevealUnit =
+  | { id: 'title'; kind: 'title'; title: string; subtitle?: string }
+  | { id: 'detail'; kind: 'detail'; text: string }
+  | { id: 'scene'; kind: 'scene'; text: string }
+  | { id: string; kind: 'relation'; item: RelationItem };
 
 function useIsMobile(breakpoint = MOBILE_BREAKPOINT_PX): boolean {
   const [isMobile, setIsMobile] = useState(() =>
@@ -36,16 +44,18 @@ interface BriefSectionProps {
   label: string;
   children: ReactNode;
   variant?: 'default' | 'characters';
+  animate?: boolean;
 }
 
 function BriefSection({
   label,
   children,
   variant = 'default',
+  animate = false,
 }: BriefSectionProps) {
   return (
     <section
-      className={`story-brief__section${variant === 'characters' ? ' story-brief__section--characters' : ''}`}
+      className={`story-brief__section${variant === 'characters' ? ' story-brief__section--characters' : ''}${animate ? ' story-brief__block--pop' : ''}`}
     >
       <h3 className="story-brief__section-label">{label}</h3>
       {variant === 'default' ? (
@@ -57,10 +67,16 @@ function BriefSection({
   );
 }
 
-function CharacterCard({ item }: { item: RelationItem }) {
+function CharacterCard({
+  item,
+  animate = false,
+}: {
+  item: RelationItem;
+  animate?: boolean;
+}) {
   return (
     <article
-      className={`story-brief__character-card${item.isProtagonist ? ' story-brief__character-card--protagonist' : ''}`}
+      className={`story-brief__character-card${item.isProtagonist ? ' story-brief__character-card--protagonist' : ''}${animate ? ' story-brief__block--pop' : ''}`}
     >
       <header className="story-brief__character-header">
         <span className="story-brief__character-name">{item.name}</span>
@@ -78,40 +94,143 @@ function CharacterCard({ item }: { item: RelationItem }) {
   );
 }
 
+function buildBriefUnits(
+  background: StoryBackground,
+  protagonistName: string,
+  themeTitle?: string,
+): BriefRevealUnit[] {
+  const displayTitle = background.title.trim() || themeTitle || '';
+  const subtitle =
+    themeTitle &&
+    background.title.trim() &&
+    themeTitle !== background.title.trim()
+      ? themeTitle
+      : undefined;
+  const sceneText = buildSceneBriefText(background.summary, background.sceneNow);
+  const relations = parseRelationLines(background.relationships, protagonistName);
+
+  const units: BriefRevealUnit[] = [];
+
+  if (displayTitle) {
+    units.push({ id: 'title', kind: 'title', title: displayTitle, subtitle });
+  }
+  if (background.detail.trim()) {
+    units.push({ id: 'detail', kind: 'detail', text: background.detail.trim() });
+  }
+  if (sceneText.trim()) {
+    units.push({ id: 'scene', kind: 'scene', text: sceneText.trim() });
+  }
+  for (const item of relations) {
+    units.push({ id: item.id, kind: 'relation', item });
+  }
+
+  return units;
+}
+
+function renderBriefUnit(unit: BriefRevealUnit, animate: boolean) {
+  switch (unit.kind) {
+    case 'title':
+      return (
+        <div
+          key={unit.id}
+          className={`story-brief__intro${animate ? ' story-brief__block--pop' : ''}`}
+        >
+          <h2 className="story-brief__title">{unit.title}</h2>
+          {unit.subtitle && (
+            <p className="story-brief__subtitle">{unit.subtitle}</p>
+          )}
+        </div>
+      );
+    case 'detail':
+      return (
+        <BriefSection
+          key={unit.id}
+          label={STORY_BRIEF_SECTION.DETAIL}
+          animate={animate}
+        >
+          <p className="story-brief__text">{unit.text}</p>
+        </BriefSection>
+      );
+    case 'scene':
+      return (
+        <BriefSection
+          key={unit.id}
+          label={STORY_BRIEF_SECTION.SCENE}
+          animate={animate}
+        >
+          <p className="story-brief__text story-brief__text--scene">
+            {unit.text}
+          </p>
+        </BriefSection>
+      );
+    case 'relation':
+      return (
+        <CharacterCard key={unit.id} item={unit.item} animate={animate} />
+      );
+    default:
+      return null;
+  }
+}
+
 export function StoryBriefPanel({
   background,
   protagonistName,
   themeTitle,
   turnLabel,
+  guideStreaming = false,
 }: StoryBriefPanelProps) {
   const isMobile = useIsMobile();
   const [mobileExpanded, setMobileExpanded] = useState(false);
   const panelExpanded = !isMobile || mobileExpanded;
 
-  const displayTitle = background.title.trim() || themeTitle || '剧本';
-  const subtitle =
-    themeTitle && background.title.trim() && themeTitle !== background.title.trim()
-      ? themeTitle
-      : undefined;
-
-  const relations = useMemo(
-    () => parseRelationLines(background.relationships, protagonistName),
-    [background.relationships, protagonistName],
+  const briefUnits = useMemo(
+    () => buildBriefUnits(background, protagonistName, themeTitle),
+    [background, protagonistName, themeTitle],
   );
 
-  const sceneText = useMemo(
-    () => buildSceneBriefText(background.summary, background.sceneNow),
-    [background.summary, background.sceneNow],
-  );
+  const { visibleItems } = useBriefRevealQueue(briefUnits, guideStreaming);
 
-  const hasContent =
-    Boolean(sceneText.trim()) ||
-    relations.length > 0 ||
-    Boolean(background.detail.trim());
+  const displayUnits = guideStreaming ? visibleItems : briefUnits;
+  const showGenerating = guideStreaming && displayUnits.length === 0;
+
+  const bodyNodes: ReactNode[] = [];
+  let relationBuffer: BriefRevealUnit[] = [];
+
+  const flushRelations = () => {
+    if (relationBuffer.length === 0) return;
+    bodyNodes.push(
+      <BriefSection
+        key={`relations-${relationBuffer[0].id}`}
+        label={STORY_BRIEF_SECTION.RELATIONS}
+        variant="characters"
+      >
+        <div className="story-brief__character-list">
+          {relationBuffer.map((unit) =>
+            unit.kind === 'relation'
+              ? renderBriefUnit(unit, guideStreaming)
+              : null,
+          )}
+        </div>
+      </BriefSection>,
+    );
+    relationBuffer = [];
+  };
+
+  for (const unit of displayUnits) {
+    if (unit.kind === 'relation') {
+      relationBuffer.push(unit);
+      continue;
+    }
+    flushRelations();
+    bodyNodes.push(renderBriefUnit(unit, guideStreaming));
+  }
+  flushRelations();
 
   return (
     <aside
-      className={`story-brief ${!panelExpanded ? 'story-brief--collapsed' : ''}`}
+      className={`story-brief${
+        panelExpanded ? ' story-brief--expanded' : ' story-brief--collapsed'
+      }`}
       aria-label="剧本概览"
     >
       <header className="story-brief__header">
@@ -122,7 +241,9 @@ export function StoryBriefPanel({
         {isMobile && (
           <button
             type="button"
-            className="story-brief__toggle"
+            className={`story-brief__toggle${
+              mobileExpanded ? ' story-brief__toggle--expanded' : ''
+            }`}
             onClick={() => setMobileExpanded((v) => !v)}
             aria-expanded={mobileExpanded}
           >
@@ -131,47 +252,19 @@ export function StoryBriefPanel({
         )}
       </header>
 
-      {panelExpanded && (
+      <div
+        className={`story-brief__body${
+          panelExpanded ? ' story-brief__body--open' : ''
+        }`}
+        aria-hidden={!panelExpanded}
+      >
         <div className="story-brief__scroll">
-          <div className="story-brief__intro">
-            <h2 className="story-brief__title">{displayTitle}</h2>
-            {subtitle && (
-              <p className="story-brief__subtitle">{subtitle}</p>
-            )}
-          </div>
-
-          {!hasContent && (
+          {showGenerating && (
             <p className="story-brief__empty">剧本背景生成中…</p>
           )}
-
-          {background.detail.trim() && (
-            <BriefSection label={STORY_BRIEF_SECTION.DETAIL}>
-              <p className="story-brief__text">{background.detail.trim()}</p>
-            </BriefSection>
-          )}
-
-          {sceneText.trim() && (
-            <BriefSection label={STORY_BRIEF_SECTION.SCENE}>
-              <p className="story-brief__text story-brief__text--scene">
-                {sceneText.trim()}
-              </p>
-            </BriefSection>
-          )}
-
-          {relations.length > 0 && (
-            <BriefSection
-              label={STORY_BRIEF_SECTION.RELATIONS}
-              variant="characters"
-            >
-              <div className="story-brief__character-list">
-                {relations.map((item) => (
-                  <CharacterCard key={item.id} item={item} />
-                ))}
-              </div>
-            </BriefSection>
-          )}
+          {bodyNodes}
         </div>
-      )}
+      </div>
     </aside>
   );
 }

@@ -1,0 +1,55 @@
+.story-end-banner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.85rem 0.75rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  background: rgba(18, 18, 22, 0.96);
+  border-top: 1px solid rgba(212, 175, 106, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.story-end-banner--enter {
+  animation: storyEndBannerPop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes storyEndBannerPop {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.story-end-banner__text {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.28em;
+  color: rgba(212, 175, 106, 0.88);
+}
+
+.story-end-banner__btn {
+  min-width: 140px;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(145deg, #d4af6a, #b8924a);
+  border: none;
+  border-radius: 999px;
+  color: #1a1408;
+  font-family: var(--font-chat);
+  font-size: 0.88rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(212, 175, 106, 0.25);
+  transition: transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.story-end-banner__btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(212, 175, 106, 0.35);
+}

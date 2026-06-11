@@ -1,4 +1,4 @@
-/** 开场群引导行（与首次 completion 同流输出） */
+/** 开场剧本引导行（与首次 completion 同流输出） */
 export const GUIDE_LINE = 'GUIDE:';
 
 export const GUIDE_FIELD = {

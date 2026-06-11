@@ -1,4 +1,4 @@
-/** 微信聊天剧本行协议 */
+/** 短剧剧本行协议（MSG 为角色对白，由前端以对话流展示） */
 export const SCRIPT_LINE = {
   SCENE: 'SCENE:',
   NARR: 'NARR:',
@@ -9,12 +9,18 @@ export const SCRIPT_LINE = {
 
 export const SCRIPT_FIELD_SEP = '|';
 
+export const SCRIPT_LINE_META = {
+  CARD: 'CARD:',
+} as const;
+
 export const SCRIPT_LIMITS = {
-  maxSceneChars: 40,
-  maxNarrChars: 40,
-  maxMsgChars: 72,
+  maxSceneChars: 48,
+  maxNarrChars: 120,
+  maxMsgChars: 96,
   openingMinMsg: 4,
   openingMaxMsg: 8,
+  openingMaxNarr: 2,
   turnMinMsg: 2,
   turnMaxMsg: 5,
+  turnMaxNarr: 2,
 } as const;

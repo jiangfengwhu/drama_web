@@ -1,53 +1,38 @@
-/** 首页文案：场景钩子，非功能说明 */
+/** 首页文案：诙谐、有戏感，非功能说明书 */
 
 export const HOME_HERO = {
-  eyebrow: '有人@了你',
-  titleLine1: '这条群聊里，',
-  titleAccent: '你是主角',
+  eyebrow: '群演？不，你是主角。',
+  titleLine1: '让我',
+  titleAccent: '演一集',
   subtitle:
-    '董事会甩锅、豪门认亲、前任诈尸——消息一条接一条弹出来。你回什么，剧情就往哪里疯。没有选项，只有你敢不敢发出去的那句话。',
-  cta: '领入场券 · 进群',
-  footnote: '一局到底，直到故事自己收束',
+    '退婚宴、董事会、前任诈尸——剧本已经写好，缺的是你那一句。滑条选脾气，或者直接打字，看 NPC 怎么接招。',
+  cta: '领票 · 上场',
+  footnote: '一局到底，演到你满意收工',
 } as const;
 
 export const HOME_CHAT_PREVIEW = [
   {
     kind: 'system' as const,
-    text: '你已被拉入「董事会临时群（7）」',
+    text: '场次已开 —— 你已被推上主位',
   },
   {
     kind: 'other' as const,
-    sender: '赵天豪',
-    text: '这份合同，你签也得签，不签也得签。',
+    sender: '林婉',
+    text: '这份协议，签也得签，不签也得签。',
   },
   {
     kind: 'other' as const,
-    sender: '苏晚',
-    text: '……你终于肯回消息了。',
+    sender: '周启',
+    text: '……你终于肯开口了。',
   },
   {
     kind: 'hint' as const,
-    text: '你会怎么回？',
-  },
-] as const;
-
-export const HOME_TEASERS = [
-  {
-    tag: '男频',
-    title: '他们以为你完了',
-    line: '你打字：「合同我看过。第7条，违法。」',
-    accent: 'gold' as const,
-  },
-  {
-    tag: '女频',
-    title: '他在等你的下一句',
-    line: '你打字：「那晚的事，你打算装多久？」',
-    accent: 'rose' as const,
+    text: '这句，你怎么接？',
   },
 ] as const;
 
 export const HOME_WHISPERS = [
-  'NPC 会接话，也会翻脸——你说过的话，他们都记得。',
-  '每一次输入都是抉择：忍、怼、装傻、掀桌，后果在气泡里长出来。',
-  '一张入场券，换一整局只属于此刻的你——没有章节，只有结局。',
+  'NPC 有立场也有记性——你上一句怎么说的，他们记得清清楚楚。',
+  '没有 A/B/C 选项：情绪滑条定调，或直接即兴——演砸了也算一种结局。',
+  '一张票换一整局：没有章节号，只有你自己选的收场方式。',
 ] as const;

@@ -14,11 +14,11 @@ export const INITIAL_ADMISSION_TICKETS = 2;
 export const TICKET_PACK_SIZE = 3;
 export const TICKET_PACK_PRICE_LABEL = '¥6';
 
-/** 篇幅影响完结节奏（最少用户发言轮数） */
+/** 篇幅标签；minTurns 为允许 COMPLETE: yes 的用户最低选择次数 */
 export const STORY_PACE: Record<StoryLength, { label: string; minTurns: number }> = {
-  short: { label: '短篇 · 快节奏', minTurns: 5 },
-  medium: { label: '中篇 · 标准', minTurns: 10 },
-  long: { label: '长篇 · 慢热', minTurns: 18 },
+  short: { label: '短篇 · 快节奏', minTurns: 4 },
+  medium: { label: '中篇 · 标准', minTurns: 8 },
+  long: { label: '长篇 · 慢热', minTurns: 15 },
 };
 
 export const LENGTH_LABELS: Record<StoryLength, string> = {

@@ -40,16 +40,13 @@
   color: var(--text-primary);
 }
 
-.layout__logo-mark {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  color: var(--accent-gold);
-  border: 1px solid var(--accent-gold-dim);
+.layout__logo-img {
+  flex-shrink: 0;
   width: 2.5rem;
   height: 2.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
+  border-radius: 0.55rem;
+  box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.2);
 }
 
 .layout__logo-text {
@@ -119,6 +116,7 @@
   }
 
   .layout__logo-text {
-    display: none;
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
   }
 }

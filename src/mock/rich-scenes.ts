@@ -15,7 +15,7 @@ export interface RichSceneTemplate {
   isClimax?: boolean;
 }
 
-const IMG: Record<ThemeId, string[]> = {
+const IMG: Partial<Record<ThemeId, string[]>> = {
   'business-war': [
     'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80',
     'https://images.unsplash.com/photo-1560179707-f14e90ef3623?w=1200&q=80',
@@ -44,7 +44,7 @@ const IMG: Record<ThemeId, string[]> = {
 };
 
 export function pickSceneImage(themeId: ThemeId, chapterIndex: number): string {
-  const list = IMG[themeId];
+  const list = IMG[themeId] ?? IMG['business-war']!;
   return list[chapterIndex % list.length];
 }
 
@@ -83,7 +83,7 @@ export const MALE_BUSINESS_WAR: RichSceneTemplate[] = [
     beats: [
       '你的手机在凌晨一点四十七分开始疯狂震动——不是一条，是十七个未接来电，来自三家媒体、两家监管联系人，以及赵天豪的「慰问」。',
       '交易室的大屏上，林氏股价像断了线的风筝。做空报告、离职高管爆料、甚至你大学时期的旧照都被翻出来，编排成一出「人设崩塌」的连续剧。',
-      '苏晚把一杯冷掉的美式推到你手边，眼下是明显的青黑：「三家机构联合做空，浮亏已经逼近警戒线。赵天豪在群里发话了——48小时内，他要看到您签字。」',
+      '苏晚把一杯冷掉的美式推到你手边，眼下是明显的青黑：「三家机构联合做空，浮亏已经逼近警戒线。赵天豪那边放话了——48小时内，他要看到您签字。」',
       '你盯着K线图上那个熟悉的锯齿——上一世，就是在这个形态出现后第三小时，你的质押盘被强行平仓。',
       '但这一次，你的私人邮箱里躺着一封未读邮件，发件人代号「Owl」。只有一个附件：赵氏集团海外壳公司股权穿透图，以及……一份开曼群岛法院的冻结申请草稿。',
       '窗外，东方明珠的灯仍亮着。这座从不睡觉的城市从不会为谁的崩溃而停顿。可你知道，真正该失眠的人，不该是你。',
@@ -229,7 +229,7 @@ export function getRichScenePool(
     'male-ancient-rebirth': MALE_ANCIENT_REBIRTH,
     'female-ancient-rebirth': FEMALE_ANCIENT_REBIRTH,
   };
-  return map[key] ?? MALE_BUSINESS_WAR;
+  return map[key] ?? (audience === 'female' ? FEMALE_BUSINESS_WAR : MALE_BUSINESS_WAR);
 }
 
 export function personalizeTemplate(

@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom';
 import { Layout } from '../../components/Layout/Layout';
+import logoUrl from '../../assets/logo.jpg';
+import { APP_NAME } from '../../constants/app-brand.const';
 import {
   HOME_CHAT_PREVIEW,
   HOME_HERO,
-  HOME_TEASERS,
   HOME_WHISPERS,
 } from '../../constants/home-copy.const';
 import { isAgnesConfigured } from '../../services/agnes-ai.service';
@@ -17,10 +18,16 @@ export function HomePage() {
       <section className="home">
         <div className="home__hero">
           <div className="home__hero-content">
+            <img
+              src={logoUrl}
+              alt={APP_NAME}
+              className="home__logo"
+              width={120}
+              height={120}
+            />
             <p className="home__eyebrow">{HOME_HERO.eyebrow}</p>
             <h1 className="home__title">
               {HOME_HERO.titleLine1}
-              <br />
               <span className="home__title-accent">{HOME_HERO.titleAccent}</span>
             </h1>
             <p className="home__subtitle">{HOME_HERO.subtitle}</p>
@@ -30,7 +37,7 @@ export function HomePage() {
                 {HOME_HERO.cta}
               </Link>
               <span className="home__mode-tag">
-                {aiReady ? 'AI 实时续写 · 专属剧情' : '演示模式 · 可先体验'}
+                {aiReady ? 'AI 实时续写 · 专属场次' : '演示模式 · 可先体验'}
               </span>
               <span className="home__cta-note">{HOME_HERO.footnote}</span>
             </div>
@@ -42,7 +49,7 @@ export function HomePage() {
                 <span className="home__chat-preview-dot" />
                 <span className="home__chat-preview-dot" />
                 <span className="home__chat-preview-dot" />
-                <span className="home__chat-preview-label">群聊 · 进行中</span>
+                <span className="home__chat-preview-label">现场 · 进行中</span>
               </div>
               <div className="home__chat-preview-body">
                 {HOME_CHAT_PREVIEW.map((item, index) => {
@@ -83,19 +90,6 @@ export function HomePage() {
                   );
                 })}
               </div>
-            </div>
-
-            <div className="home__teasers">
-              {HOME_TEASERS.map((teaser) => (
-                <article
-                  key={teaser.tag}
-                  className={`home__teaser home__teaser--${teaser.accent}`}
-                >
-                  <span className="home__teaser-tag">{teaser.tag}</span>
-                  <h3>{teaser.title}</h3>
-                  <p>{teaser.line}</p>
-                </article>
-              ))}
             </div>
           </div>
         </div>

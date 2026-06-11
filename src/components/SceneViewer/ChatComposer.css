@@ -66,3 +66,43 @@
   cursor: not-allowed;
   box-shadow: none;
 }
+
+.chat-composer-bar {
+  width: 100%;
+  background: rgba(18, 18, 22, 0.95);
+  backdrop-filter: blur(12px);
+}
+
+.chat-composer-bar--enter {
+  animation: chatComposerBarPop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes chatComposerBarPop {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.chat-composer-bar__header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.45rem 0.75rem 0;
+  background: rgba(18, 18, 22, 0.95);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+}
+
+.chat-composer-bar__header .emotion-slider__free-btn {
+  margin-bottom: 0;
+}
+
+.chat-composer-bar .chat-composer {
+  border-top: none;
+  padding-top: 0.45rem;
+}

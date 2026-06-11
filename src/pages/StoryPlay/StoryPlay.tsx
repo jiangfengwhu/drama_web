@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Layout } from '../../components/Layout/Layout';
 import { SceneViewer } from '../../components/SceneViewer/SceneViewer';
-import { getThemeById } from '../../constants/themes';
+import { resolveTheme } from '../../constants/themes';
 import { useAdmissionTicket } from '../../hooks/useAdmissionTicket';
 import { useStory } from '../../hooks/useStory';
 import type { StoryConfig } from '../../types/story.types';
@@ -23,7 +23,11 @@ export function StoryPlayPage() {
     streamState,
     loading,
     isStreaming,
-    finished,
+    storyComplete,
+    showEndingScreen,
+    leaveStory,
+    attitudeCards,
+    hasPendingStreamLine,
     startStory,
     submitAction,
     resetStory,
@@ -49,20 +53,16 @@ export function StoryPlayPage() {
 
   if (!config) return null;
 
-  const theme = getThemeById(config.themeId);
+  const theme = resolveTheme(config);
   const showViewer = storyState !== null;
 
-  if (finished) {
+  if (showEndingScreen) {
     return (
       <Layout tickets={tickets}>
         <div className="story-play__ending">
           <span className="story-play__ending-tag">— END —</span>
           <h1>故事暂告段落</h1>
-          <p>
-            《{theme.title}》已完结。你发送了
-            {storyState?.actionHistory.length ?? 0}
-            条消息，共同构成了这段专属叙事。
-          </p>
+          <p>《{theme.title}》的故事在此告一段落，感谢你的每一次选择。</p>
           <div className="story-play__ending-actions">
             <Link to="/create" className="story-play__btn" onClick={resetStory}>
               开启新故事
@@ -100,8 +100,12 @@ export function StoryPlayPage() {
           themeTitle={theme.title}
           mood={streamState?.mood ?? storyState.mood}
           isStreaming={isStreaming}
-          showInput={!finished}
+          hasPendingStreamLine={hasPendingStreamLine}
+          showInput={!storyComplete}
+          storyComplete={storyComplete}
+          onLeaveStory={leaveStory}
           inputDisabled={loading}
+          attitudeCards={attitudeCards}
           minActionLen={minActionLen}
           maxActionLen={maxActionLen}
           audience={config.audience}

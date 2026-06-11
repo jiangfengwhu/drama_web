@@ -18,10 +18,18 @@ function pushNpcMsg(
   sender: string,
   message: string,
   protagonistName: string,
+  stageDirection?: string,
 ): void {
   if (isProtagonistSpeaker(sender, protagonistName)) return;
-  const text = shorten(message, 72);
-  if (text) lines.push({ kind: 'msg', sender, message: text });
+  const text = shorten(message, 96);
+  if (text) {
+    lines.push({
+      kind: 'msg',
+      sender,
+      message: text,
+      stageDirection: stageDirection ? shorten(stageDirection, 24) : undefined,
+    });
+  }
 }
 
 export function templateSceneText(template: RichSceneTemplate): string {
@@ -36,7 +44,7 @@ export function templateToNpcScript(
   const lines: ScriptLine[] = [];
 
   for (const dlg of template.dialogues.slice(0, 5)) {
-    pushNpcMsg(lines, dlg.speaker, dlg.text, protagonistName);
+    pushNpcMsg(lines, dlg.speaker, dlg.text, protagonistName, dlg.tone);
   }
 
   for (const beat of template.beats.slice(0, 2)) {

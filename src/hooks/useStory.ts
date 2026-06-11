@@ -9,7 +9,6 @@ import {
   toPlayerAction,
 } from '../services/story-engine.service';
 import {
-  mergePartialTailLine,
   prepareDisplayScriptLines,
 } from '../services/script-text.util';
 import type {
@@ -34,6 +33,10 @@ function applyChunkUpdate(
     streamRevision: revision,
     isStreaming: true,
     mood: fields.mood !== undefined ? fields.mood : prev.mood,
+    attitudeCards:
+      fields.attitudeCards !== undefined
+        ? fields.attitudeCards
+        : prev.attitudeCards,
     lockedScript:
       fields.lockedScript !== undefined ? fields.lockedScript : prev.lockedScript,
     scriptLines:
@@ -51,11 +54,7 @@ function streamingLines(
 ): ScriptLine[] {
   if (!streamState?.isStreaming) return [];
 
-  const raw = streamState.liveTail?.trim()
-    ? mergePartialTailLine(streamState.scriptLines, streamState.liveTail)
-    : streamState.scriptLines;
-
-  return prepareDisplayScriptLines(raw, {
+  return prepareDisplayScriptLines(streamState.scriptLines, {
     stripProtagonist: isOpeningStream,
     protagonistName,
   });
@@ -64,7 +63,8 @@ function streamingLines(
 export function useStory() {
   const [storyState, setStoryState] = useState<StoryState | null>(null);
   const [streamState, setStreamState] = useState<SceneStreamState | null>(null);
-  const [finished, setFinished] = useState(false);
+  const [storyComplete, setStoryComplete] = useState(false);
+  const [showEndingScreen, setShowEndingScreen] = useState(false);
   const abortRef = useRef(false);
 
   const pushStreamUpdate = useCallback((update: SceneStreamUpdate) => {
@@ -102,7 +102,7 @@ export function useStory() {
           setStoryState((prev) => {
             if (!prev) return prev;
             const merged = mergeTurnResult(prev, complete.payload, true);
-            if (complete.payload.isComplete) setFinished(true);
+            if (complete.payload.isComplete) setStoryComplete(true);
             return merged;
           });
           setStreamState(null);
@@ -126,7 +126,7 @@ export function useStory() {
             setStoryState((prev) => {
               if (!prev) return prev;
               const merged = mergeTurnResult(prev, complete.payload, false);
-              if (complete.payload.isComplete) setFinished(true);
+              if (complete.payload.isComplete) setStoryComplete(true);
               return merged;
             });
             setStreamState(null);
@@ -139,7 +139,8 @@ export function useStory() {
 
   const startStory = useCallback(
     async (config: StoryConfig) => {
-      setFinished(false);
+      setStoryComplete(false);
+      setShowEndingScreen(false);
       setStreamState(null);
       const state = createStoryState(config);
       setStoryState(state);
@@ -155,7 +156,7 @@ export function useStory() {
 
   const submitAction = useCallback(
     async (rawText: string) => {
-      if (!storyState || streamState?.isStreaming || finished) return false;
+      if (!storyState || streamState?.isStreaming || storyComplete) return false;
 
       const text = rawText.trim();
       if (text.length < MIN_ACTION_LEN || text.length > MAX_ACTION_LEN) {
@@ -163,7 +164,7 @@ export function useStory() {
       }
 
       const withAction = recordUserAction(storyState, text);
-      setStoryState(withAction);
+      setStoryState({ ...withAction, attitudeCards: [] });
       setStreamState(createInitialStreamState(withAction.turnIndex));
 
       try {
@@ -174,14 +175,19 @@ export function useStory() {
 
       return true;
     },
-    [storyState, streamState, finished, runNpcTurn],
+    [storyState, streamState, storyComplete, runNpcTurn],
   );
 
   const resetStory = useCallback(() => {
     abortRef.current = true;
     setStoryState(null);
     setStreamState(null);
-    setFinished(false);
+    setStoryComplete(false);
+    setShowEndingScreen(false);
+  }, []);
+
+  const leaveStory = useCallback(() => {
+    setShowEndingScreen(true);
   }, []);
 
   const isStreaming = streamState?.isStreaming ?? false;
@@ -199,16 +205,27 @@ export function useStory() {
       ? streamState.background
       : storyState?.background;
 
+  const attitudeCards =
+    isStreaming && streamState?.attitudeCards?.length
+      ? streamState.attitudeCards
+      : (storyState?.attitudeCards ?? []);
+
+  const hasPendingStreamLine = Boolean(streamState?.liveTail?.trim());
+
   return {
     storyState,
     displayBackground,
     committedLines,
     partialLines,
     streamState,
+    attitudeCards,
+    hasPendingStreamLine,
     isOpeningStream,
     loading: isStreaming,
     isStreaming,
-    finished,
+    storyComplete,
+    showEndingScreen,
+    leaveStory,
     startStory,
     submitAction,
     resetStory,

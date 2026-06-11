@@ -19,11 +19,15 @@ import type {
 } from '../types/story.types';
 import { templateSceneText, templateToNpcScript } from './script-builder';
 
-const THEME_TITLE_PREFIX: Record<ThemeId, string> = {
-  'business-war': '',
+const THEME_TITLE_PREFIX: Partial<Record<ThemeId, string>> = {
   'rich-family': '【豪门】',
+  'ceo-romance': '【豪门】',
   'urban-romance': '【都市】',
+  'youth-sweet': '【都市】',
   'ancient-rebirth': '【古风】',
+  'ancient-romance': '【古风】',
+  'palace-intrigue': '【宫斗】',
+  'apocalypse': '【末世】',
 };
 
 function applyThemeFlavor(
@@ -32,7 +36,7 @@ function applyThemeFlavor(
 ): GeneratedTurnPayload {
   if (themeId === 'business-war' || !payload.background) return payload;
   const theme = getThemeById(themeId);
-  const prefix = THEME_TITLE_PREFIX[themeId];
+  const prefix = THEME_TITLE_PREFIX[themeId] ?? '';
   return {
     ...payload,
     background: {
@@ -92,21 +96,47 @@ function buildMockOpeningBackground(
   };
 }
 
-function artisticProtagonistLine(action: string): string {
+function artisticProtagonistLine(action: string): { stageDirection: string; dialogue: string } {
   const intent = action.trim().slice(0, 48);
   if (intent.length <= 12) {
-    return `行，${intent}。`;
+    return {
+      stageDirection: '目光一凛，嘴角微扬',
+      dialogue: `行，${intent}。`,
+    };
   }
-  return `明白了。${intent.slice(0, 36)}${intent.length > 36 ? '…' : ''}`;
+  return {
+    stageDirection: '沉吟片刻，抬眼',
+    dialogue: `明白了。${intent.slice(0, 36)}${intent.length > 36 ? '…' : ''}`,
+  };
+}
+
+import { DEFAULT_EMOTION_LINES } from '../constants/prompt-format.const';
+
+function mockEmotionLines(config: StoryConfig, userTurnCount: number): string[] {
+  const base: string[] = [...DEFAULT_EMOTION_LINES[config.audience]];
+  if (userTurnCount % 2 === 1) {
+    base[6] =
+      config.audience === 'male'
+        ? '你们逼我的，那就别怪我不客气了。'
+        : '既然你不仁，就别怪我不义了。';
+  }
+  return base;
 }
 
 export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
   const pool = getRichScenePool(config.themeId, config.audience);
   const template = personalizeTemplate(pool[0], config.protagonistName);
   const sceneText = templateSceneText(template);
+  const openingCards = [...DEFAULT_EMOTION_LINES[config.audience]];
+
+  const narrLine = {
+    kind: 'narr' as const,
+    text: `${template.atmosphere}。空气里弥漫着紧绷的压迫感，远处隐约传来低沉的雷鸣。`,
+  };
   const npcLines = buildNpcOnlyLines(template, config.protagonistName);
   const scriptLines: ScriptLine[] = [
     { kind: 'scene', text: sceneText },
+    narrLine,
     ...npcLines,
   ];
   const background = buildMockOpeningBackground(template, config, config.themeId);
@@ -127,11 +157,17 @@ export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
         `SCENE: ${sceneText}`,
         ...scriptLines.map((line) => {
           if (line.kind === 'narr') return `NARR: ${line.text ?? ''}`;
-          return `MSG: ${line.sender}|${line.message ?? ''}`;
+          if (line.kind === 'scene') return `SCENE: ${line.text ?? ''}`;
+          const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
+          return `MSG: ${line.sender}|${action}${line.message ?? ''}`;
         }),
+        `MOOD: ${template.mood}`,
+        ...openingCards.map((card) => `CARD: ${card}`),
+        'COMPLETE: no',
       ].join('\n'),
       background,
       mood: template.mood,
+      attitudeCards: openingCards,
       isComplete: false,
     },
     config.themeId,
@@ -151,15 +187,24 @@ export function getMockNpcTurn(
   const moodKey = config.audience === 'female' ? 'romance' : 'tension';
   const beats = CONTINUATION_BEATS[moodKey] ?? CONTINUATION_BEATS.default;
 
+  const attitudeCards = mockEmotionLines(config, userTurnCount);
+  const protagonistLine = artisticProtagonistLine(userAction);
+
   const scriptLines: ScriptLine[] = [
-    { kind: 'msg', sender: '你', message: artisticProtagonistLine(userAction) },
-    { kind: 'narr', text: beats[0]?.slice(0, 36) ?? '局势正在变化。' },
+    {
+      kind: 'msg',
+      sender: '你',
+      message: protagonistLine.dialogue,
+      stageDirection: protagonistLine.stageDirection,
+    },
+    {
+      kind: 'narr',
+      text: `${beats[0]?.slice(0, 56) ?? '局势正在变化。'} 冷风从门缝灌入，带着金属与雨水的腥气。`,
+    },
     ...buildNpcOnlyLines(template, config.protagonistName).slice(0, 4),
   ];
 
-  const minTurns =
-    config.length === 'short' ? 5 : config.length === 'medium' ? 10 : 18;
-  const isComplete = userTurnCount >= minTurns && userTurnCount % 3 === 0;
+  const isComplete = false;
 
   return applyThemeFlavor(
     {
@@ -167,9 +212,11 @@ export function getMockNpcTurn(
       scriptRaw: [
         serializeScriptLines(scriptLines),
         `MOOD: ${template.mood}`,
+        ...attitudeCards.map((card) => `CARD: ${card}`),
         `COMPLETE: ${isComplete ? 'yes' : 'no'}`,
       ].join('\n'),
       mood: template.mood,
+      attitudeCards,
       isComplete,
     },
     config.themeId,

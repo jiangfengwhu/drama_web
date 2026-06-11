@@ -12,6 +12,7 @@ export const META_LINE = {
   RELATIONS: 'RELATIONS:',
   BACKGROUND: 'BACKGROUND:',
   COMPLETE: 'COMPLETE:',
+  CARD: 'CARD:',
   DIALOGUE: 'DIALOGUE:',
 } as const;
 

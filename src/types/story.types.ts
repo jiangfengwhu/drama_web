@@ -8,19 +8,35 @@ export type ThemeId =
   | 'business-war'
   | 'rich-family'
   | 'urban-romance'
-  | 'ancient-rebirth';
+  | 'ancient-rebirth'
+  | 'urban-system'
+  | 'master-descends'
+  | 'urban-martial'
+  | 'suspense-brain'
+  | 'rebirth-revenge'
+  | 'apocalypse'
+  | 'palace-intrigue'
+  | 'ancient-romance'
+  | 'youth-sweet'
+  | 'ceo-romance'
+  | 'custom';
 
-export type SceneMood = 'tension' | 'romance' | 'triumph' | 'sorrow' | 'neutral';
+export interface CustomThemeInput {
+  title: string;
+  description: string;
+}
 
 export interface StoryConfig {
   themeId: ThemeId;
   audience: AudienceType;
   length: StoryLength;
-  characterCount: number;
   protagonistName: string;
+  customTheme?: CustomThemeInput;
 }
 
-/** 群公告：吸顶展示故事背景 */
+export type SceneMood = 'tension' | 'romance' | 'triumph' | 'sorrow' | 'neutral';
+
+/** 剧本概览：左侧大局观展示的故事背景 */
 export interface StoryBackground {
   title: string;
   /** 一句话引子 */
@@ -47,6 +63,7 @@ export interface SceneStreamState {
   lockedScript?: string;
   background?: StoryBackground;
   mood?: SceneMood;
+  attitudeCards?: string[];
   isStreaming: boolean;
   streamRevision: number;
 }
@@ -66,6 +83,7 @@ export interface StoryState {
   scriptLines: ScriptLine[];
   background: StoryBackground;
   mood: SceneMood;
+  attitudeCards: string[];
   actionHistory: StoryActionRecord[];
 }
 
@@ -74,6 +92,7 @@ export interface GeneratedTurnPayload {
   scriptRaw: string;
   background?: StoryBackground;
   mood: SceneMood;
+  attitudeCards: string[];
   isComplete: boolean;
 }
 
@@ -84,7 +103,12 @@ export type SceneStreamUpdate =
       fields: Partial<
         Pick<
           SceneStreamState,
-          'scriptLines' | 'liveTail' | 'lockedScript' | 'background' | 'mood'
+          | 'scriptLines'
+          | 'liveTail'
+          | 'lockedScript'
+          | 'background'
+          | 'mood'
+          | 'attitudeCards'
         >
       >;
     }

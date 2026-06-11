@@ -13,6 +13,23 @@
   min-height: 72vh;
 }
 
+.home__hero-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.home__logo {
+  width: 5.5rem;
+  height: 5.5rem;
+  object-fit: cover;
+  border-radius: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(201, 162, 39, 0.18);
+}
+
 .home__eyebrow {
   font-family: var(--font-ui);
   font-size: 0.8rem;
@@ -22,7 +39,6 @@
 }
 
 .home__eyebrow::before {
-  content: '@ ';
   opacity: 0.7;
 }
 
@@ -36,8 +52,8 @@
 }
 
 .home__title-accent {
-  color: var(--accent-rose);
-  font-style: italic;
+  color: var(--accent-gold);
+  font-style: normal;
 }
 
 .home__subtitle {
@@ -224,52 +240,6 @@
   opacity: 0.9;
 }
 
-/* 男频 / 女频 teaser */
-.home__teasers {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
-}
-
-.home__teaser {
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.02);
-  animation: homeBubbleIn 0.7s ease-out both;
-}
-
-.home__teaser--gold {
-  animation-delay: 0.35s;
-  border-left: 2px solid var(--accent-gold);
-}
-
-.home__teaser--rose {
-  animation-delay: 0.45s;
-  border-left: 2px solid var(--accent-rose);
-}
-
-.home__teaser-tag {
-  font-size: 0.65rem;
-  letter-spacing: 0.18em;
-  color: var(--text-muted);
-}
-
-.home__teaser h3 {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 400;
-  margin: 0.35rem 0 0.4rem;
-  color: var(--text-primary);
-}
-
-.home__teaser p {
-  margin: 0;
-  font-size: 0.78rem;
-  line-height: 1.65;
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
 /* 底部：氛围句，非功能列表 */
 .home__whispers {
   list-style: none;
@@ -314,8 +284,10 @@
     order: -1;
   }
 
-  .home__teasers {
-    grid-template-columns: 1fr;
+  .home__logo {
+    width: 4.5rem;
+    height: 4.5rem;
+    margin-bottom: 1rem;
   }
 
   .home__whispers {

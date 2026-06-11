@@ -15,23 +15,27 @@
   padding: 0.85rem var(--chat-padding-inline) 1.25rem;
   font-family: var(--font-chat);
   background: #101014;
-  background-image:
-    radial-gradient(
-      ellipse 80% 50% at 50% -10%,
-      rgba(76, 201, 122, 0.06) 0%,
-      transparent 55%
-    ),
-    radial-gradient(
-      circle at 80% 100%,
-      rgba(91, 141, 239, 0.04) 0%,
-      transparent 40%
-    );
 }
 
 .wechat-chat__system {
   display: flex;
   justify-content: center;
   padding: 0.2rem 0;
+}
+
+.wechat-chat__entry--pop {
+  animation: chatBubblePop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes chatBubblePop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .wechat-chat__system-text {
@@ -128,6 +132,23 @@
   letter-spacing: 0.02em;
 }
 
+.wechat-chat__stage-direction {
+  margin: 0 0 0.35rem !important;
+  font-size: 0.76rem !important;
+  line-height: 1.5 !important;
+  font-style: italic;
+  letter-spacing: 0.03em;
+  opacity: 0.72;
+}
+
+.wechat-chat__bubble--self .wechat-chat__stage-direction {
+  color: rgba(240, 255, 245, 0.82);
+}
+
+.wechat-chat__bubble--other .wechat-chat__stage-direction {
+  color: rgba(255, 255, 255, 0.55);
+}
+
 .wechat-chat__bubble--self {
   background: linear-gradient(145deg, #4cc97a, #38a866);
   color: #f0fff5;
@@ -147,41 +168,4 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom-left-radius: 6px;
   backdrop-filter: blur(8px);
-}
-
-.wechat-chat__loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0;
-}
-
-.wechat-chat__loading-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.38);
-  animation: wechatLoadingPulse 1.2s ease-in-out infinite;
-}
-
-.wechat-chat__loading-dot:nth-child(2) {
-  animation-delay: 0.15s;
-}
-
-.wechat-chat__loading-dot:nth-child(3) {
-  animation-delay: 0.3s;
-}
-
-@keyframes wechatLoadingPulse {
-  0%,
-  60%,
-  100% {
-    transform: scale(0.85);
-    opacity: 0.4;
-  }
-  30% {
-    transform: scale(1);
-    opacity: 1;
-  }
 }

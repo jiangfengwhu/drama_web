@@ -1,5 +1,5 @@
 .story-setup {
-  max-width: 800px;
+  max-width: 920px;
   margin: 0 auto;
   padding: 3rem 2rem 4rem;
 }
@@ -81,11 +81,18 @@
 
 .story-setup__themes {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
 }
 
+@media (max-width: 720px) {
+  .story-setup__themes {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .story-setup__theme {
+  position: relative;
   padding: 1.25rem;
   border: 1px solid var(--border-subtle);
   background: var(--bg-panel);
@@ -93,6 +100,22 @@
   cursor: pointer;
   text-align: left;
   transition: all 0.25s ease;
+}
+
+.story-setup__theme-tag {
+  display: inline-block;
+  margin-bottom: 0.45rem;
+  padding: 0.12rem 0.4rem;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.72);
+  background: rgba(0, 0, 0, 0.28);
+  border-radius: 3px;
+}
+
+.story-setup__theme--custom {
+  border-style: dashed;
 }
 
 .story-setup__theme:hover {
@@ -187,7 +210,7 @@
 
 .story-setup__input {
   width: 100%;
-  max-width: 280px;
+  max-width: 480px;
   padding: 0.85rem 1rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
@@ -196,9 +219,47 @@
   font-size: 1rem;
 }
 
-.story-setup__input:focus {
+.story-setup__textarea {
+  width: 100%;
+  max-width: 480px;
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  line-height: 1.65;
+  resize: vertical;
+}
+
+.story-setup__input:focus,
+.story-setup__textarea:focus {
   outline: none;
   border-color: var(--accent-gold-dim);
+}
+
+.story-setup__preview {
+  margin-bottom: 0.5rem;
+  padding: 1rem 1.1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+}
+
+.story-setup__preview-label {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+.story-setup__preview-text {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text-secondary);
 }
 
 .story-setup__footer {
