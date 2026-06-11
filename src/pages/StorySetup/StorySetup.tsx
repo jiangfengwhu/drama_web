@@ -6,7 +6,7 @@ import {
   TICKET_PACK_PRICE_LABEL,
   TICKET_PACK_SIZE,
 } from '../../constants/game.const';
-import { CUSTOM_THEME_LIMITS } from '../../constants/story-theme.const';
+import { CUSTOM_THEME_LIMITS, PROTAGONIST_NAME_LIMITS } from '../../constants/story-theme.const';
 import {
   CUSTOM_THEME_OPTION,
   resolveTheme,
@@ -52,7 +52,7 @@ export function StorySetupPage() {
     themeId,
     audience,
     length,
-    protagonistName: protagonistName.trim() || '你',
+    protagonistName: protagonistName.trim(),
     customTheme:
       themeId === 'custom'
         ? {
@@ -80,6 +80,20 @@ export function StorySetupPage() {
         );
         return;
       }
+    }
+
+    const name = protagonistName.trim();
+    if (name.length < PROTAGONIST_NAME_LIMITS.min) {
+      setFormError(
+        `主角名称至少 ${PROTAGONIST_NAME_LIMITS.min} 个字（2-4 字中文名）`,
+      );
+      return;
+    }
+    if (name.length > PROTAGONIST_NAME_LIMITS.max) {
+      setFormError(
+        `主角名称最多 ${PROTAGONIST_NAME_LIMITS.max} 个字（2-4 字中文名）`,
+      );
+      return;
     }
 
     if (!hasTicket) {
@@ -226,10 +240,11 @@ export function StorySetupPage() {
           <input
             type="text"
             className="story-setup__input"
-            placeholder="留空则使用「你」"
+            placeholder={`必填，${PROTAGONIST_NAME_LIMITS.min}-${PROTAGONIST_NAME_LIMITS.max} 字中文名，如：沈清、林婉`}
             value={protagonistName}
             onChange={(e) => setProtagonistName(e.target.value)}
-            maxLength={12}
+            maxLength={PROTAGONIST_NAME_LIMITS.max}
+            required
           />
         </section>
 

@@ -1,7 +1,7 @@
 .emotion-slider {
   width: 100%;
-  padding: 0.55rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  background: rgba(14, 14, 18, 0.97);
+  padding: 0.55rem 0.75rem 0.6rem;
+  background: #111114;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(14px);
 }
@@ -166,49 +166,11 @@
   box-shadow: none;
 }
 
-.emotion-slider__emoji-track {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.emotion-slider__emoji-stops {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 0 0.15rem;
-}
-
-.emotion-slider__emoji-stop {
-  flex: 1;
-  display: flex;
-  justify-content: center;
-  padding: 0;
-  border: none;
-  background: transparent;
-  font-size: 1.05rem;
-  line-height: 1;
-  opacity: 0.32;
-  filter: grayscale(0.35);
-  transform: scale(0.88);
-  cursor: pointer;
-  transition:
-    opacity 0.18s ease,
-    transform 0.18s ease,
-    filter 0.18s ease;
-}
-
-.emotion-slider__emoji-stop--active {
-  opacity: 1;
-  filter: grayscale(0);
-  transform: scale(1.18);
-}
-
-.emotion-slider__emoji-stop:disabled {
-  cursor: not-allowed;
-}
-
 .emotion-slider__track-wrap {
+  margin-top: 0.1rem;
+}
+
+.emotion-slider__track-inner {
   position: relative;
   height: 2rem;
   display: flex;
@@ -288,13 +250,4 @@
 
 .emotion-slider__range:active::-webkit-slider-thumb {
   transform: scale(1.05);
-}
-
-.emotion-slider__range::-moz-range-thumb {
-  width: 2rem;
-  height: 2rem;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  box-shadow: none;
 }

@@ -1,10 +1,10 @@
 .wechat-chat {
-  --chat-padding-inline: 0.75rem;
+  --chat-padding-inline: 0;
   --chat-avatar-size: 40px;
+  --chat-avatar-max-width: 4.1rem;
   --chat-row-gap: 0.6rem;
-  /* 对侧头像道：40px 头像 + 0.6rem 间距 ≈ 50px */
+  /* 气泡最大宽度按老规矩：预留对侧头像位，布局用固定 40px 计算 */
   --chat-opposite-lane: calc(var(--chat-avatar-size) + var(--chat-row-gap));
-  /* 行内气泡可用宽 = 行宽 − 本侧头像 − 间距 − 对侧头像道 */
   --chat-bubble-lane-width: calc(
     100% - var(--chat-avatar-size) - var(--chat-row-gap) - var(--chat-opposite-lane)
   );
@@ -12,9 +12,9 @@
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 0.85rem var(--chat-padding-inline) 1.25rem;
+  padding: 0 0 1.25rem;
   font-family: var(--font-chat);
-  background: #101014;
+  background: transparent;
 }
 
 .wechat-chat__system {
@@ -70,15 +70,22 @@
 
 .wechat-chat__avatar {
   flex-shrink: 0;
-  width: var(--chat-avatar-size);
+  min-width: var(--chat-avatar-size);
+  max-width: var(--chat-avatar-max-width);
+  width: auto;
   height: var(--chat-avatar-size);
-  border-radius: 50%;
+  padding: 0 0.28rem;
+  border-radius: 12px;
   background: var(--avatar-gradient);
   color: var(--avatar-text);
   font-family: var(--font-chat);
-  font-size: 0.9rem;
+  font-size: clamp(0.62rem, 2.6vw, 0.72rem);
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -89,7 +96,7 @@
 
 .wechat-chat__other-body,
 .wechat-chat__self-body {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   max-width: var(--chat-bubble-lane-width);
 }
@@ -102,70 +109,66 @@
 
 .wechat-chat__self-body {
   display: flex;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
-.wechat-chat__name {
-  font-size: 0.72rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  color: var(--name-accent, rgba(255, 255, 255, 0.55));
-  margin-bottom: 0.28rem;
-  padding-left: 0.35rem;
+.wechat-chat__message-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
   max-width: 100%;
+  width: fit-content;
+}
+
+.wechat-chat__message-stack--self {
+  align-items: flex-end;
+}
+
+/** 舞台提示：气泡上方，轻量副文本，不抢台词注意力 */
+.wechat-chat__stage-caption {
+  margin: 0;
+  padding: 0 0.4rem;
+  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: var(--bubble-stage, rgba(255, 255, 255, 0.42));
+  opacity: 0.88;
 }
 
 .wechat-chat__bubble {
   position: relative;
-  max-width: 100%;
   width: fit-content;
+  max-width: 100%;
+  min-width: min(100%, 3.25rem);
   padding: 0.65rem 0.95rem;
   border-radius: 20px;
   word-break: break-word;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
-.wechat-chat__bubble p {
+.wechat-chat__bubble--themed {
+  background: var(--bubble-bg);
+  border: 1px solid var(--bubble-border);
+  box-shadow:
+    0 3px 14px var(--bubble-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.wechat-chat__dialogue {
   margin: 0;
-  font-size: 0.94rem;
-  line-height: 1.65;
+  font-size: 0.96rem;
+  font-weight: 500;
+  line-height: 1.68;
   letter-spacing: 0.02em;
-}
-
-.wechat-chat__stage-direction {
-  margin: 0 0 0.35rem !important;
-  font-size: 0.76rem !important;
-  line-height: 1.5 !important;
-  font-style: italic;
-  letter-spacing: 0.03em;
-  opacity: 0.72;
-}
-
-.wechat-chat__bubble--self .wechat-chat__stage-direction {
-  color: rgba(240, 255, 245, 0.82);
-}
-
-.wechat-chat__bubble--other .wechat-chat__stage-direction {
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--bubble-dialogue);
 }
 
 .wechat-chat__bubble--self {
-  background: linear-gradient(145deg, #4cc97a, #38a866);
-  color: #f0fff5;
   border-bottom-right-radius: 6px;
-  box-shadow:
-    0 2px 12px rgba(56, 168, 102, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-.wechat-chat__bubble--self p {
-  color: inherit;
 }
 
 .wechat-chat__bubble--other {
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   border-bottom-left-radius: 6px;
-  backdrop-filter: blur(8px);
 }

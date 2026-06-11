@@ -1,15 +1,52 @@
 import { GUIDE_FIELD, GUIDE_LINE } from '../constants/guide-format.const';
+import {
+  isProtagonistCastName,
+  parseRelationLines,
+} from './story-brief.util';
 import type { StoryBackground } from '../types/story.types';
 
 export type GuideSnapshot = Partial<Record<keyof typeof GUIDE_FIELD, string>>;
 
 function normalizeGuideLine(raw: string): string {
   let line = raw.trim();
-  const re = /^GUIDE\s*[：:]\s*/i;
+  const re = /^GUIDE?\s*[：:]\s*/i;
   if (re.test(line)) {
     return `${GUIDE_LINE}${line.replace(re, '').trimStart()}`;
   }
   return line;
+}
+
+function parseGuideBody(body: string): GuideSnapshot | null {
+  const pipeIdx = body.indexOf('|');
+  if (pipeIdx > 0) {
+    const fieldRaw = body.slice(0, pipeIdx).trim().toUpperCase();
+    const value = body.slice(pipeIdx + 1);
+    const field = resolveGuideField(fieldRaw);
+    if (!field) return null;
+    return { [field]: value };
+  }
+
+  const colonMatch = body.match(/^([A-Z_]+)\s*[：:]\s*(.+)$/i);
+  if (!colonMatch?.[2]?.trim()) return null;
+  const field = resolveGuideField(colonMatch[1].trim().toUpperCase());
+  if (!field) return null;
+  return { [field]: colonMatch[2] };
+}
+
+function resolveGuideField(fieldRaw: string): keyof GuideSnapshot | null {
+  switch (fieldRaw) {
+    case GUIDE_FIELD.TITLE:
+      return 'TITLE';
+    case GUIDE_FIELD.PROLOGUE:
+    case 'DETAIL':
+    case 'SUMMARY':
+      return 'PROLOGUE';
+    case GUIDE_FIELD.CAST:
+    case 'RELATIONS':
+      return 'CAST';
+    default:
+      return null;
+  }
 }
 
 /** 解析单行 GUIDE: FIELD|内容（须完整一行且内容非空） */
@@ -27,26 +64,7 @@ export function parsePartialGuideLine(raw: string): GuideSnapshot | null {
   if (!normalized.toUpperCase().startsWith(GUIDE_LINE)) return null;
 
   const body = normalized.slice(GUIDE_LINE.length).trim();
-  const sep = body.indexOf('|');
-  if (sep <= 0) return null;
-
-  const fieldRaw = body.slice(0, sep).trim().toUpperCase();
-  const value = body.slice(sep + 1);
-
-  switch (fieldRaw) {
-    case GUIDE_FIELD.TITLE:
-      return { TITLE: value };
-    case GUIDE_FIELD.SUMMARY:
-      return { SUMMARY: value };
-    case GUIDE_FIELD.SCENE:
-      return { SCENE: value };
-    case GUIDE_FIELD.RELATIONS:
-      return { RELATIONS: value };
-    case GUIDE_FIELD.DETAIL:
-      return { DETAIL: value };
-    default:
-      return null;
-  }
+  return parseGuideBody(body);
 }
 
 export function mergeGuideSnapshots(
@@ -54,12 +72,6 @@ export function mergeGuideSnapshots(
   patch: GuideSnapshot,
 ): GuideSnapshot {
   return { ...base, ...patch };
-}
-
-const RELATION_BULLET_LINE = /^[·•\-]\s+.+/;
-
-export function isRelationBulletLine(line: string): boolean {
-  return RELATION_BULLET_LINE.test(line.trim());
 }
 
 export function appendGuideField(
@@ -82,35 +94,111 @@ function guideField(
   return key in guide ? (guide[key] ?? '') : fallback;
 }
 
+function formatCastRow(name: string, raw: string, item: {
+  headline: string;
+  description: string;
+}): string {
+  const trimmedRaw = raw.trim();
+  if (trimmedRaw.startsWith('·') || trimmedRaw.startsWith('•') || trimmedRaw.startsWith('-')) {
+    return trimmedRaw;
+  }
+  const detail = [item.headline, item.description].filter(Boolean).join('，');
+  return detail ? `· ${name}：${detail}` : `· ${name}`;
+}
+
+/** 剔除主角 CAST，并按姓名去重 */
+export function sanitizeCastRegistry(
+  characters: string,
+  protagonistName?: string,
+): string {
+  const seen = new Set<string>();
+  const rows: string[] = [];
+
+  for (const item of parseRelationLines(characters, protagonistName)) {
+    const name = item.name.trim();
+    if (!name || seen.has(name)) continue;
+    if (isProtagonistCastName(name, protagonistName)) continue;
+    seen.add(name);
+    rows.push(formatCastRow(name, item.raw, item));
+  }
+
+  return rows.join('\n');
+}
+
+/** 合并 CAST 条目，按姓名去重（保留先登场的描述） */
+export function mergeCastEntries(
+  base: string,
+  patch: string,
+  protagonistName?: string,
+): string {
+  const sanitizedBase = sanitizeCastRegistry(base, protagonistName);
+  const patchTrimmed = patch.trim();
+  if (!patchTrimmed) return sanitizedBase;
+
+  const knownNames = new Set(
+    parseRelationLines(sanitizedBase, protagonistName).map((item) =>
+      item.name.trim(),
+    ),
+  );
+  const incoming = parseRelationLines(patchTrimmed, protagonistName);
+  const newRows: string[] = [];
+
+  for (const item of incoming) {
+    const name = item.name.trim();
+    if (!name || knownNames.has(name)) continue;
+    if (isProtagonistCastName(name, protagonistName)) continue;
+    knownNames.add(name);
+    newRows.push(formatCastRow(name, item.raw, item));
+  }
+
+  if (newRows.length === 0) return sanitizedBase;
+  return sanitizedBase
+    ? `${sanitizedBase}\n${newRows.join('\n')}`
+    : newRows.join('\n');
+}
+
+/** 将流式 GUIDE 快照合并进剧本背景（CAST 追加，不覆盖已有角色） */
+export function applyGuideStreamPatch(
+  guide: GuideSnapshot,
+  base: StoryBackground,
+  sceneLineText?: string,
+  protagonistName?: string,
+): StoryBackground {
+  const sceneNow = sceneLineText?.trim() || base.sceneNow;
+  const castPatch = guide.CAST?.trim();
+  const characters = castPatch
+    ? mergeCastEntries(base.characters, castPatch, protagonistName)
+    : sanitizeCastRegistry(base.characters, protagonistName);
+  return {
+    title: guideField(guide, 'TITLE', base.title),
+    prologue: guideField(guide, 'PROLOGUE', base.prologue),
+    characters,
+    sceneNow,
+    atmosphere: sceneNow || base.atmosphere,
+  };
+}
+
+/** @deprecated 使用 applyGuideStreamPatch */
 export function guideToBackground(
   guide: GuideSnapshot,
   base: StoryBackground,
   sceneLineText?: string,
 ): StoryBackground {
-  const sceneNow =
-    'SCENE' in guide
-      ? (guide.SCENE ?? '')
-      : sceneLineText || base.sceneNow;
-  return {
-    title: guideField(guide, 'TITLE', base.title),
-    summary: guideField(guide, 'SUMMARY', base.summary),
-    sceneNow,
-    relationships: guideField(guide, 'RELATIONS', base.relationships),
-    detail: guideField(guide, 'DETAIL', base.detail),
-    atmosphere: sceneLineText || guide.SCENE || base.atmosphere,
-  };
+  return applyGuideStreamPatch(guide, base, sceneLineText);
 }
 
 export function mergeBackground(
   base: StoryBackground,
   patch: Partial<StoryBackground>,
+  protagonistName?: string,
 ): StoryBackground {
   return {
     title: patch.title || base.title,
-    summary: patch.summary || base.summary,
+    prologue: patch.prologue || base.prologue,
+    characters: patch.characters
+      ? mergeCastEntries(base.characters, patch.characters, protagonistName)
+      : sanitizeCastRegistry(base.characters, protagonistName),
     sceneNow: patch.sceneNow || base.sceneNow,
-    relationships: patch.relationships || base.relationships,
-    detail: patch.detail || base.detail,
     atmosphere: patch.atmosphere || base.atmosphere,
   };
 }
@@ -130,16 +218,18 @@ export function serializeGuideLines(guide: GuideSnapshot): string[] {
       .map((line) => line.trim())
       .filter(Boolean);
     if (lines.length === 0) return;
-    rows.push(`${GUIDE_LINE}${field}|${lines[0]}`);
-    for (let i = 1; i < lines.length; i += 1) {
-      rows.push(lines[i]);
+    for (const line of lines) {
+      rows.push(`${GUIDE_LINE}${field}|${line}`);
     }
   };
 
   pushSingle('TITLE', guide.TITLE);
-  pushSingle('SUMMARY', guide.SUMMARY);
-  pushSingle('SCENE', guide.SCENE);
-  pushMultilineField('RELATIONS', guide.RELATIONS);
-  pushMultilineField('DETAIL', guide.DETAIL);
+  pushMultilineField('PROLOGUE', guide.PROLOGUE);
+  pushMultilineField('CAST', guide.CAST);
   return rows;
+}
+
+/** CAST 续行：以 · • - 开头的条目 */
+export function isRelationBulletLine(line: string): boolean {
+  return /^[·•\-]\s*\S/.test(line.trim());
 }

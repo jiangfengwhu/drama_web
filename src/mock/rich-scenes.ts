@@ -70,9 +70,9 @@ export const MALE_BUSINESS_WAR: RichSceneTemplate[] = [
     innerMonologue:
       '心跳稳定在六十二。奇怪吗？面对仇敌，你竟然感到一种近乎冷酷的平静——这是重生者独有的奢侈：你知道他每一步棋的落点。',
     dialogues: [
-      { speaker: '赵天豪', text: '林总，签字吧。现在配合，我还可以给你留个体面。', tone: '虚伪的关切' },
-      { speaker: '苏晚', text: '（低声）林总，U盘在我这里。随时可以。', tone: '压抑的决然' },
-      { speaker: '陈律师', text: '林总，从法律角度，我们仍有48小时申诉窗口……', tone: '谨慎' },
+      { speaker: '赵天豪', text: '陈律，报告既然到了，流程是不是该往前走了？', tone: '施压' },
+      { speaker: '陈律师', text: '赵总，在未完成问询程序前，这份审计不宜当作定案依据。', tone: '公事公办' },
+      { speaker: '苏晚', text: '（低声，只对{{name}}）林总，U盘在我这里。随时可以。', tone: '压抑的决然' },
     ],
   },
   {

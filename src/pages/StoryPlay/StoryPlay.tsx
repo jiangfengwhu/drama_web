@@ -42,6 +42,10 @@ export function StoryPlayPage() {
       navigate('/create', { replace: true });
       return;
     }
+    if (!config.protagonistName?.trim()) {
+      navigate('/create', { replace: true });
+      return;
+    }
     if (!ticketConsumed) {
       navigate('/create', { replace: true });
       return;

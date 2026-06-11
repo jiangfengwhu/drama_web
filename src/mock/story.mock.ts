@@ -6,7 +6,7 @@ import {
   personalizeTemplate,
 } from './rich-scenes';
 import type { RichSceneTemplate } from './rich-scenes';
-import { serializeGuideLines } from '../services/guide-text.util';
+import { mergeCastEntries, serializeGuideLines } from '../services/guide-text.util';
 import {
   prepareDisplayScriptLines,
   serializeScriptLines,
@@ -57,43 +57,62 @@ function buildNpcOnlyLines(
 
 function buildMockOpeningBackground(
   template: RichSceneTemplate,
-  config: StoryConfig,
   themeId: ThemeId,
 ): StoryBackground {
   const theme = getThemeById(themeId);
-  const protagonist = config.protagonistName || '你';
-  const protagonistLabel = protagonist === '你' ? '你（主角，用户扮演）' : `${protagonist}（主角，用户扮演）`;
-
-  const npcLines = template.presentCharacters
-    .filter((c) => !c.includes('{{name}}'))
-    .map((name) => {
-      const dlg = template.dialogues.find((d) => d.speaker === name);
-      const hint = dlg?.tone ? `，${dlg.tone}` : '';
-      return `· ${name}：在场关键人物${hint}`;
-    });
-
-  const relationships = [
-    `· ${protagonistLabel}：${theme.description.slice(0, 36)}…`,
-    ...npcLines,
-  ].join('\n');
-
   const sceneBeat = template.beats[1] ?? template.beats[0] ?? '';
   const sceneNow = `${template.atmosphere}。${sceneBeat.slice(0, 72)}${sceneBeat.length > 72 ? '…' : ''}`;
 
-  const detail = [
-    theme.description,
-    '',
-    ...template.beats.slice(0, 4),
-  ].join('\n');
+  const prologue = (template.beats[0] ?? theme.description).slice(0, 96);
 
   return {
     title: template.title,
-    summary: `${theme.title} · ${theme.subtitle}`,
+    prologue,
+    characters: '',
     sceneNow,
-    relationships,
-    detail: detail.slice(0, 420),
     atmosphere: template.atmosphere,
   };
+}
+
+function npcCastHint(template: RichSceneTemplate, name: string): string {
+  const dlg = template.dialogues.find((d) => d.speaker === name);
+  return dlg?.tone ? dlg.tone : '在场关键人物';
+}
+
+function castEntryFor(template: RichSceneTemplate, name: string): string {
+  return `· ${name}：${npcCastHint(template, name)}`;
+}
+
+const GUIDE_CAST_PREFIX = 'GUIDE: CAST|';
+
+function scriptLinesWithProgressiveCast(
+  lines: ScriptLine[],
+  template: RichSceneTemplate,
+): string[] {
+  const seen = new Set<string>();
+  const rows: string[] = [];
+
+  for (const line of lines) {
+    if (line.kind === 'scene') {
+      rows.push(`SCENE: ${line.text ?? ''}`);
+      continue;
+    }
+    if (line.kind === 'narr') {
+      rows.push(`NARR: ${line.text ?? ''}`);
+      continue;
+    }
+    if (line.kind !== 'msg') continue;
+
+    const sender = line.sender ?? '';
+    if (sender && !seen.has(sender)) {
+      seen.add(sender);
+      rows.push(`${GUIDE_CAST_PREFIX}${castEntryFor(template, sender)}`);
+    }
+    const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
+    rows.push(`MSG: ${sender}|${action}${line.message ?? ''}`);
+  }
+
+  return rows;
 }
 
 function artisticProtagonistLine(action: string): { stageDirection: string; dialogue: string } {
@@ -139,33 +158,30 @@ export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
     narrLine,
     ...npcLines,
   ];
-  const background = buildMockOpeningBackground(template, config, config.themeId);
+  const background = buildMockOpeningBackground(template, config.themeId);
 
   const guideRaw = serializeGuideLines({
     TITLE: background.title,
-    SUMMARY: background.summary,
-    SCENE: background.sceneNow,
-    RELATIONS: background.relationships,
-    DETAIL: background.detail,
+    PROLOGUE: background.prologue,
   }).join('\n');
+
+  const bodyLines = scriptLinesWithProgressiveCast(scriptLines, template);
+  const castFragments = bodyLines
+    .filter((line) => line.startsWith(GUIDE_CAST_PREFIX))
+    .map((line) => line.slice(GUIDE_CAST_PREFIX.length));
+  const characters = mergeCastEntries('', castFragments.join('\n'));
 
   return applyThemeFlavor(
     {
       scriptLines,
       scriptRaw: [
         guideRaw,
-        `SCENE: ${sceneText}`,
-        ...scriptLines.map((line) => {
-          if (line.kind === 'narr') return `NARR: ${line.text ?? ''}`;
-          if (line.kind === 'scene') return `SCENE: ${line.text ?? ''}`;
-          const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
-          return `MSG: ${line.sender}|${action}${line.message ?? ''}`;
-        }),
+        ...bodyLines,
         `MOOD: ${template.mood}`,
         ...openingCards.map((card) => `CARD: ${card}`),
         'COMPLETE: no',
       ].join('\n'),
-      background,
+      background: { ...background, characters, sceneNow: sceneText },
       mood: template.mood,
       attitudeCards: openingCards,
       isComplete: false,

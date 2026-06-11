@@ -1,3 +1,5 @@
+import type { ScriptLine } from '../types/script.types';
+
 export interface RelationItem {
   id: string;
   name: string;
@@ -37,9 +39,29 @@ function isProtagonistName(name: string, protagonistName?: string): boolean {
   if (!protagonistName) return false;
   const normalized = name.trim();
   if (!normalized) return false;
-  if (normalized === protagonistName) return true;
+  if (normalized === protagonistName.trim()) return true;
   if (normalized === '你' || normalized === '主角') return true;
   return normalized.includes('（你）') || normalized.endsWith('·你');
+}
+
+/** 判断 CAST 条目是否为主角（不应写入 background.characters） */
+export function isProtagonistCastName(
+  name: string,
+  protagonistName?: string,
+): boolean {
+  return isProtagonistName(name, protagonistName);
+}
+
+function buildProtagonistRelationItem(protagonistName: string): RelationItem {
+  const name = protagonistName.trim();
+  return {
+    id: 'protagonist',
+    name,
+    headline: '主角',
+    description: '',
+    raw: '',
+    isProtagonist: true,
+  };
 }
 
 function splitRelationRawEntries(text: string): string[] {
@@ -70,7 +92,7 @@ export function parseRelationLines(
       const cleaned = line.replace(/^[·•\-]\s*/, '');
       const colonIdx = cleaned.search(/[：:]/);
       const name =
-        colonIdx >= 0 ? cleaned.slice(0, colonIdx).trim() : cleaned;
+        colonIdx >= 0 ? cleaned.slice(0, colonIdx).trim() : cleaned.trim();
       const detail = colonIdx >= 0 ? cleaned.slice(colonIdx + 1).trim() : '';
       const { headline, description } = splitRelationDetail(detail);
 
@@ -84,7 +106,16 @@ export function parseRelationLines(
       };
     });
 
-  return items.sort((a, b) => {
+  const seen = new Set<string>();
+  const deduped: RelationItem[] = [];
+  for (const item of items) {
+    const key = item.name.trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(item);
+  }
+
+  return deduped.sort((a, b) => {
     if (a.isProtagonist === b.isProtagonist) return 0;
     return a.isProtagonist ? -1 : 1;
   });
@@ -103,4 +134,137 @@ export function buildSceneBriefText(summary: string, sceneNow: string): string {
     return `${hook}\n\n${scene}`;
   }
   return scene || hook;
+}
+
+export function buildCharacterProfileMap(
+  characters: string,
+  protagonistName?: string,
+): Map<string, RelationItem> {
+  const map = new Map<string, RelationItem>();
+  for (const item of parseRelationLines(characters, protagonistName)) {
+    if (isProtagonistCastName(item.name, protagonistName)) continue;
+    map.set(item.name, item);
+  }
+  if (protagonistName?.trim()) {
+    map.set(protagonistName.trim(), buildProtagonistRelationItem(protagonistName));
+  }
+  return map;
+}
+
+export function mergeCharacterProfileMaps(
+  primary: Map<string, RelationItem>,
+  fallback: Map<string, RelationItem>,
+): Map<string, RelationItem> {
+  const merged = new Map(primary);
+  for (const [key, item] of fallback) {
+    if (!merged.has(key)) merged.set(key, item);
+  }
+  return merged;
+}
+
+export function buildCharacterProfileMapFromLines(
+  lines: ScriptLine[],
+  protagonistName?: string,
+): Map<string, RelationItem> {
+  const map = new Map<string, RelationItem>();
+  const protagonistKey = protagonistName?.trim() || '你';
+
+  const ensureProtagonist = () => {
+    for (const item of map.values()) {
+      if (item.isProtagonist) return;
+    }
+    map.set(protagonistKey, buildProtagonistRelationItem(protagonistKey));
+  };
+
+  for (const line of lines) {
+    if (line.kind !== 'msg' || !line.sender?.trim()) continue;
+    const sender = line.sender.trim();
+
+    const isProtagonist =
+      sender === '你' ||
+      Boolean(protagonistName && sender === protagonistName.trim()) ||
+      sender.includes('{{name}}');
+
+    const mapKey = isProtagonist ? protagonistKey : sender;
+    if (map.has(mapKey)) continue;
+
+    map.set(mapKey, {
+      id: isProtagonist ? 'protagonist' : `speaker-${sender}`,
+      name: isProtagonist ? protagonistKey : sender,
+      headline: isProtagonist ? '主角' : '登场人物',
+      description: '',
+      raw: '',
+      isProtagonist,
+    });
+  }
+
+  ensureProtagonist();
+  return map;
+}
+
+/** 合并人物表并去重，保证主角只出现一次 */
+export function buildRelationList(
+  profiles: Map<string, RelationItem>,
+  protagonistName?: string,
+): RelationItem[] {
+  const protagonistKey = protagonistName?.trim();
+  const seenNames = new Set<string>();
+  let protagonistIncluded = false;
+  const items: RelationItem[] = [];
+
+  const sorted = [...profiles.values()].sort((a, b) => {
+    if (a.isProtagonist === b.isProtagonist) return 0;
+    return a.isProtagonist ? -1 : 1;
+  });
+
+  for (const item of sorted) {
+    if (item.isProtagonist) {
+      if (protagonistIncluded) continue;
+      protagonistIncluded = true;
+      const name = protagonistKey || item.name.trim();
+      if (seenNames.has(name)) continue;
+      seenNames.add(name);
+      items.push({
+        ...item,
+        id: 'protagonist',
+        name,
+        headline: item.headline || '主角',
+        isProtagonist: true,
+      });
+      continue;
+    }
+
+    const name = item.name.trim();
+    if (!name || seenNames.has(name)) continue;
+    if (protagonistKey && name === protagonistKey) continue;
+    seenNames.add(name);
+    items.push(item);
+  }
+
+  return items;
+}
+
+export function lookupCharacterProfile(
+  profiles: Map<string, RelationItem>,
+  senderName: string,
+  isProtagonist: boolean,
+  protagonistName?: string,
+): RelationItem | null {
+  if (isProtagonist) {
+    for (const item of profiles.values()) {
+      if (item.isProtagonist) return item;
+    }
+    const key = protagonistName?.trim();
+    if (key && profiles.has(key)) return profiles.get(key) ?? null;
+    return null;
+  }
+
+  const direct = profiles.get(senderName.trim());
+  if (direct) return direct;
+
+  for (const item of profiles.values()) {
+    if (item.name === senderName.trim()) return item;
+  }
+
+  return null;
 }

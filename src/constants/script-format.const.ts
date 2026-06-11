@@ -20,7 +20,7 @@ export const SCRIPT_LIMITS = {
   openingMinMsg: 4,
   openingMaxMsg: 8,
   openingMaxNarr: 2,
-  turnMinMsg: 2,
-  turnMaxMsg: 5,
+  turnMinMsg: 3,
+  turnMaxMsg: 6,
   turnMaxNarr: 2,
 } as const;

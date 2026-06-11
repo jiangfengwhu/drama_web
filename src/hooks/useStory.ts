@@ -121,6 +121,7 @@ export function useStory() {
         state.scriptLines,
         state.actionHistory.length,
         userAction,
+        state.background,
         (update) => {
           handleStreamEvent(update, (complete) => {
             setStoryState((prev) => {

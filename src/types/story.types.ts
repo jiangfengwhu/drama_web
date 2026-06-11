@@ -36,17 +36,15 @@ export interface StoryConfig {
 
 export type SceneMood = 'tension' | 'romance' | 'triumph' | 'sorrow' | 'neutral';
 
-/** 剧本概览：左侧大局观展示的故事背景 */
+/** 剧本概览 */
 export interface StoryBackground {
   title: string;
-  /** 一句话引子 */
-  summary: string;
-  /** 当前场景：时间地点、正在发生什么 */
+  /** 前情提要（一两句话） */
+  prologue: string;
+  /** 已登记人物（GUIDE CAST 累积，渐进揭露） */
+  characters: string;
+  /** 当前场景（来自 SCENE 行） */
   sceneNow: string;
-  /** 人物关系：谁是谁、与主角关系、各自立场 */
-  relationships: string;
-  /** 前情与冲突背景 */
-  detail: string;
   atmosphere: string;
 }
 

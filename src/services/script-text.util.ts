@@ -1,5 +1,5 @@
 import { EMOTION_SLIDER_OPTION_COUNT } from '../constants/interaction.const';
-import { DEFAULT_EMOTION_LINES } from '../constants/prompt-format.const';
+import { TURN_HISTORY_LINE_LIMIT } from '../constants/game.const';
 import {
   SCRIPT_FIELD_SEP,
   SCRIPT_LINE,
@@ -7,9 +7,9 @@ import {
 import { VALID_MOODS } from '../constants/scene-text.const';
 import {
   appendGuideField,
-  isRelationBulletLine,
   mergeGuideSnapshots,
   parseGuideLine,
+  parsePartialGuideLine,
   type GuideSnapshot,
 } from './guide-text.util';
 import type { ScriptLine } from '../types/script.types';
@@ -112,6 +112,22 @@ export function mergeTurnMetaSnapshots(
   };
 }
 
+function appendAttitudeCard(
+  turnMeta: TurnMetaSnapshot,
+  text: string,
+): TurnMetaSnapshot {
+  const trimmed = text.trim();
+  if (!trimmed) return turnMeta;
+  return mergeTurnMetaSnapshots(turnMeta, { attitudeCards: [trimmed] });
+}
+
+function isCardBlockTerminator(trimmed: string): boolean {
+  if (/^COMPLETE\s*[：:]/i.test(trimmed)) return true;
+  if (matchProtocolTag(normalizeProtocolLine(trimmed))) return true;
+  if (parseGuideLine(trimmed)) return true;
+  return false;
+}
+
 /** 解析 CARD: 情绪滑动条台词行（不进入聊天展示） */
 export function parseCardLine(raw: string): string | null {
   const trimmed = raw.trim().replace(/^[-*•]\s*/, '');
@@ -137,22 +153,59 @@ export function parseMsgStageDirection(message: string): {
 
 export function normalizeAttitudeCards(
   cards: string[] | undefined,
-  audience: 'male' | 'female' = 'male',
+  _audience: 'male' | 'female' = 'male',
 ): string[] {
-  const defaults = [...DEFAULT_EMOTION_LINES[audience]];
-  const unique = [...new Set(cards?.map((c) => c.trim()).filter(Boolean) ?? [])];
-  const padded = [...unique];
+  return [...new Set(cards?.map((c) => c.trim()).filter(Boolean) ?? [])].slice(
+    0,
+    EMOTION_SLIDER_OPTION_COUNT,
+  );
+}
 
-  for (const line of defaults) {
-    if (padded.length >= EMOTION_SLIDER_OPTION_COUNT) break;
-    if (!padded.includes(line)) padded.push(line);
+/** 从 MOOD 与 COMPLETE 之间兜底提取 CARD（须先出现 CARD: 行，后续裸行才可续行） */
+export function extractAttitudeCardsFromRaw(scriptRaw: string): string[] {
+  const rows = scriptRaw.split('\n');
+  let afterMood = false;
+  let inCardContinuation = false;
+  const cards: string[] = [];
+
+  for (const line of rows) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    if (/^MOOD\s*[：:]/i.test(trimmed)) {
+      afterMood = true;
+      inCardContinuation = false;
+      continue;
+    }
+    if (/^COMPLETE\s*[：:]/i.test(trimmed)) break;
+    if (!afterMood) continue;
+
+    const cardFromPrefix = parseCardLine(trimmed);
+    if (cardFromPrefix) {
+      cards.push(cardFromPrefix);
+      inCardContinuation = true;
+      continue;
+    }
+
+    if (inCardContinuation && !isCardBlockTerminator(trimmed)) {
+      cards.push(trimmed);
+      continue;
+    }
+
+    inCardContinuation = false;
   }
 
-  while (padded.length < EMOTION_SLIDER_OPTION_COUNT) {
-    padded.push(defaults[padded.length % defaults.length]);
-  }
+  return normalizeAttitudeCards(cards);
+}
 
-  return padded.slice(0, EMOTION_SLIDER_OPTION_COUNT);
+/** 解析 + 兜底提取态度卡片 */
+export function resolveAttitudeCards(
+  scriptRaw: string,
+  cards?: string[],
+): string[] {
+  const parsed = normalizeAttitudeCards(cards);
+  if (parsed.length > 0) return parsed;
+  return extractAttitudeCardsFromRaw(scriptRaw);
 }
 
 function isMetaLine(trimmed: string): boolean {
@@ -211,6 +264,14 @@ function parseLegacyRole(body: string): ScriptLine | null {
 
 function parseBareDialogue(trimmed: string): ScriptLine | null {
   if (isMetaLine(trimmed)) return null;
+  if (isGuideProtocolLine(trimmed)) return null;
+
+  const msgPipe = trimmed.match(/^([\u4e00-\u9fa5·]{1,8})\s*\|\s*(.+)$/s);
+  if (msgPipe?.[2]?.trim()) {
+    const sender = msgPipe[1].trim();
+    if (PROTOCOL_SPEAKER.test(sender)) return null;
+    return buildMsgLine(sender, msgPipe[2].trim());
+  }
 
   const bracket = trimmed.match(/^【([^】]{1,16})】\s*(.+)$/);
   if (bracket) {
@@ -221,6 +282,7 @@ function parseBareDialogue(trimmed: string): ScriptLine | null {
   if (colon) {
     const sender = colon[1].trim();
     const message = colon[2].trim();
+    if (PROTOCOL_SPEAKER.test(sender)) return null;
     if (sender && message && !/^\d/.test(sender)) {
       return buildMsgLine(sender, message);
     }
@@ -243,7 +305,7 @@ function parsePartialMsgFields(body: string): ScriptLine | null {
 /** 解析流式尾部未换行的一行（GUIDE / SCENE / MSG 等） */
 export function parsePartialTailScriptLine(tail: string): ScriptLine | null {
   const trimmed = tail.trim();
-  if (!trimmed || /^GUIDE\s*[：:]/i.test(trimmed)) return null;
+  if (!trimmed || /^GUIDE?\s*[：:]/i.test(trimmed)) return null;
   if (isMetaLine(trimmed) || parseTurnMetaLine(trimmed)) return null;
 
   const normalized = normalizeProtocolLine(trimmed);
@@ -302,10 +364,21 @@ export function mergePartialTailLine(
   return [...lines, partial];
 }
 
+const PROTOCOL_SPEAKER = /^(GUIDE?|TITLE|PROLOGUE|CAST|MOOD|CARD|COMPLETE|SCENE|NARR|MSG|ROLE)$/i;
+
+function isGuideProtocolLine(trimmed: string): boolean {
+  if (/^GUIDE?\s*[：:]/i.test(trimmed)) return true;
+  if (/^(TITLE|PROLOGUE|CAST|DETAIL|SUMMARY|RELATIONS)\s*[：:|]/i.test(trimmed)) {
+    return true;
+  }
+  return false;
+}
+
 function parseScriptLine(raw: string): ScriptLine | null {
   const trimmed = raw.trim();
   if (!trimmed || isMetaLine(trimmed)) return null;
-  if (parseGuideLine(trimmed)) return null;
+  if (isGuideProtocolLine(trimmed)) return null;
+  if (parseGuideLine(trimmed) || parsePartialGuideLine(trimmed)) return null;
 
   const normalized = normalizeProtocolLine(trimmed);
   const tag = matchProtocolTag(normalized);
@@ -342,8 +415,8 @@ function matchProtocolTagLine(line: string): ProtocolTag | null {
 
 function isGuideContinuationField(
   field: keyof GuideSnapshot | null,
-): field is keyof GuideSnapshot {
-  return field === 'RELATIONS' || field === 'DETAIL';
+): field is 'PROLOGUE' | 'CAST' {
+  return field === 'PROLOGUE' || field === 'CAST';
 }
 
 export function parseScriptStream(buffer: string): {
@@ -358,6 +431,8 @@ export function parseScriptStream(buffer: string): {
   let guide: GuideSnapshot = {};
   let turnMeta: TurnMetaSnapshot = {};
   let pendingGuideField: keyof GuideSnapshot | null = null;
+  /** 仅在一行 CARD: 出现之后，才将后续裸行视为 CARD 续行 */
+  let inCardContinuation = false;
 
   for (const line of parts) {
     const trimmed = line.trim();
@@ -368,21 +443,18 @@ export function parseScriptStream(buffer: string): {
 
     const guidePart = parseGuideLine(line);
     if (guidePart) {
-      guide = mergeGuideSnapshots(guide, guidePart);
+      inCardContinuation = false;
       const field = Object.keys(guidePart)[0] as keyof GuideSnapshot;
+      if (field === 'CAST') {
+        guide = appendGuideField(guide, 'CAST', guidePart.CAST ?? '');
+      } else {
+        guide = mergeGuideSnapshots(guide, guidePart);
+      }
       pendingGuideField = isGuideContinuationField(field) ? field : null;
       continue;
     }
 
-    if (
-      pendingGuideField === 'RELATIONS' &&
-      isRelationBulletLine(trimmed)
-    ) {
-      guide = appendGuideField(guide, 'RELATIONS', trimmed);
-      continue;
-    }
-
-    if (pendingGuideField === 'DETAIL') {
+    if (pendingGuideField === 'PROLOGUE' || pendingGuideField === 'CAST') {
       if (
         parseTurnMetaLine(trimmed) ||
         matchProtocolTagLine(trimmed) ||
@@ -390,7 +462,7 @@ export function parseScriptStream(buffer: string): {
       ) {
         pendingGuideField = null;
       } else {
-        guide = appendGuideField(guide, 'DETAIL', trimmed);
+        guide = appendGuideField(guide, pendingGuideField, trimmed);
         continue;
       }
     }
@@ -400,8 +472,21 @@ export function parseScriptStream(buffer: string): {
     const turnMetaPart = parseTurnMetaLine(line);
     if (turnMetaPart) {
       turnMeta = mergeTurnMetaSnapshots(turnMeta, turnMetaPart);
+      if (turnMetaPart.mood !== undefined) inCardContinuation = false;
+      if (turnMetaPart.attitudeCards?.length) inCardContinuation = true;
+      if (turnMetaPart.isComplete !== undefined) inCardContinuation = false;
       continue;
     }
+
+    if (isCardBlockTerminator(trimmed)) {
+      inCardContinuation = false;
+    }
+
+    if (inCardContinuation && !isCardBlockTerminator(trimmed)) {
+      turnMeta = appendAttitudeCard(turnMeta, trimmed);
+      continue;
+    }
+
     const parsed = parseScriptLine(line);
     if (parsed) lines.push(parsed);
   }
@@ -505,6 +590,20 @@ export function stripSceneLines(lines: ScriptLine[]): ScriptLine[] {
   return lines.filter((line) => line.kind !== 'scene');
 }
 
+function isProtocolNoiseMsg(line: ScriptLine): boolean {
+  if (line.kind !== 'msg') return false;
+  const sender = line.sender?.trim() ?? '';
+  if (!sender) return false;
+  if (PROTOCOL_SPEAKER.test(sender)) return true;
+  if (/^(TITLE|PROLOGUE|CAST)\s*[：:]/i.test(line.message ?? '')) return true;
+  return false;
+}
+
+/** 剔除误解析进对话流的协议行 */
+export function stripProtocolNoiseLines(lines: ScriptLine[]): ScriptLine[] {
+  return lines.filter((line) => !isProtocolNoiseMsg(line));
+}
+
 export function stripProtagonistMsgs(
   lines: ScriptLine[],
   protagonistName: string,
@@ -526,8 +625,9 @@ export function prepareDisplayScriptLines(
   options: PrepareDisplayOptions = {},
 ): ScriptLine[] {
   const { stripProtagonist = false, protagonistName = '你' } = options;
-  if (!stripProtagonist) return lines;
-  return stripProtagonistMsgs(lines, protagonistName);
+  const cleaned = stripProtocolNoiseLines(lines);
+  if (!stripProtagonist) return cleaned;
+  return stripProtagonistMsgs(cleaned, protagonistName);
 }
 
 /** @deprecated 使用 prepareDisplayScriptLines */
@@ -556,6 +656,73 @@ export function formatChatHistory(
       return `${sender}: ${action}${line.message ?? ''}`;
     })
     .join('\n');
+}
+
+/** 回合 prompt 用：仅保留最近若干行，避免上下文过长挤占 CARD 输出 */
+export function formatRecentChatHistory(
+  lines: ScriptLine[],
+  protagonistName: string,
+  lineLimit: number = TURN_HISTORY_LINE_LIMIT,
+): string {
+  const relevant = lines.filter(
+    (line) => line.kind === 'msg' || line.kind === 'narr' || line.kind === 'scene',
+  );
+  const recent =
+    lineLimit > 0 && relevant.length > lineLimit
+      ? relevant.slice(-lineLimit)
+      : relevant;
+  const formatted = formatChatHistory(recent, protagonistName);
+  if (lineLimit > 0 && relevant.length > lineLimit) {
+    return `（仅摘录最近 ${lineLimit} 行）\n${formatted}`;
+  }
+  return formatted;
+}
+
+function formatMsgLine(line: ScriptLine): string {
+  const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
+  return `${action}${line.message ?? ''}`.trim();
+}
+
+/** 回合 user prompt：接戏锚点，防止 NPC 幻词反问、各说各话 */
+export function buildTurnContinuityPrompt(
+  scriptLines: ScriptLine[],
+  protagonistName: string,
+  userAction: string,
+): string {
+  const recentMsgs = scriptLines.filter((l) => l.kind === 'msg').slice(-6);
+  const lastProtagonist = [...recentMsgs]
+    .reverse()
+    .find((l) => isProtagonistSender(l.sender ?? '', protagonistName));
+  const lastProtagonistLine = lastProtagonist
+    ? formatMsgLine(lastProtagonist)
+    : '';
+
+  const intent = userAction.trim();
+  const recentBlock =
+    recentMsgs.length > 0
+      ? recentMsgs
+          .map((line) => {
+            const who = isProtagonistSender(line.sender ?? '', protagonistName)
+              ? '你'
+              : line.sender;
+            return `· ${who}：${formatMsgLine(line)}`;
+          })
+          .join('\n')
+      : '（尚无对白）';
+
+  return `【本回合接戏锚点 — 违反则整回合作废重写】
+用户选中主角意图：「${intent}」
+${lastProtagonistLine ? `主角上一轮：「${lastProtagonistLine}」` : ''}
+
+执行顺序：
+① 写 MSG:你|… 艺术化上述意图，保留核心名词/动作/立场，勿改义。
+② 首条 NPC 须接「你」本句——回声、反驳、回避均可，须命中本句至少一处用词或动作。
+③ 第 2 条及之后：至少 1 条须接前一位 NPC（或当面与另一 NPC 交锋/帮腔/拆台），形成群戏；禁止所有 NPC 逐句只对主角喊话。
+④ 禁止幻词反问：不得用「XX？」起句，除非 XX 已出现在本句意图或下方近期对白中。
+⑤ 每回合新筹码/秘密至多 1 条。
+
+近期对白（接词不得与之矛盾）：
+${recentBlock}`;
 }
 
 export function extractSceneText(lines: ScriptLine[]): string | undefined {

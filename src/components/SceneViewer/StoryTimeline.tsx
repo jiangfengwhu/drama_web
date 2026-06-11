@@ -1,36 +1,28 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { getAvatarTheme } from '../../services/avatar-theme.util';
+import type { RelationItem } from '../../services/story-brief.util';
+import { lookupCharacterProfile } from '../../services/story-brief.util';
 import type { StoryTimelineItem } from '../../types/story-timeline.types';
+import { CharacterAvatar } from './CharacterAvatar';
 import './StoryTimeline.css';
+import './CharacterAvatar.css';
 
 interface StoryTimelineProps {
   items: StoryTimelineItem[];
+  characterProfiles: Map<string, RelationItem>;
+  protagonistName: string;
+  onProfileHover?: (profile: RelationItem | null) => void;
 }
 
-function ChatAvatar({
-  name,
-  isProtagonist = false,
-}: {
-  name?: string;
-  isProtagonist?: boolean;
-}) {
-  const theme = getAvatarTheme(name ?? '?', isProtagonist);
-
-  return (
-    <div
-      className="wechat-chat__avatar"
-      style={
-        {
-          '--avatar-gradient': theme.gradient,
-          '--avatar-ring': theme.ring,
-          '--avatar-text': theme.textColor,
-        } as React.CSSProperties
-      }
-      aria-hidden
-    >
-      {theme.initial}
-    </div>
-  );
+function bubbleThemeStyle(theme: ReturnType<typeof getAvatarTheme>): React.CSSProperties {
+  return {
+    '--bubble-bg': theme.bubbleBg,
+    '--bubble-border': theme.bubbleBorder,
+    '--bubble-dialogue': theme.bubbleDialogue,
+    '--bubble-stage': theme.bubbleStage,
+    '--bubble-stage-accent': theme.bubbleStageAccent,
+    '--bubble-shadow': theme.bubbleShadow,
+  } as React.CSSProperties;
 }
 
 function SystemTip({ text }: { text: string }) {
@@ -41,47 +33,73 @@ function SystemTip({ text }: { text: string }) {
   );
 }
 
-function ChatBubble({ item }: { item: StoryTimelineItem }) {
+function ChatBubble({
+  item,
+  characterProfiles,
+  protagonistName,
+  onProfileHover,
+}: {
+  item: StoryTimelineItem;
+  characterProfiles: Map<string, RelationItem>;
+  protagonistName: string;
+  onProfileHover?: (profile: RelationItem | null) => void;
+}) {
   const isSelf = Boolean(item.isProtagonist);
   const senderName = item.sender ?? '未知';
-  const theme = getAvatarTheme(senderName, isSelf);
+  const profile = lookupCharacterProfile(
+    characterProfiles,
+    senderName,
+    isSelf,
+    protagonistName,
+  );
+  const displayName = profile?.name ?? senderName;
+  const theme = getAvatarTheme(displayName, isSelf);
+  const bubbleStyle = bubbleThemeStyle(theme);
 
-  const bubbleBody = (
-    <>
+  const messageStack = (
+    <div
+      className={`wechat-chat__message-stack${
+        isSelf ? ' wechat-chat__message-stack--self' : ''
+      }`}
+      style={bubbleStyle}
+    >
       {item.stageDirection ? (
-        <p className="wechat-chat__stage-direction">{item.stageDirection}</p>
+        <p className="wechat-chat__stage-caption">{item.stageDirection}</p>
       ) : null}
-      <p>{item.text}</p>
-    </>
+      <div
+        className={`wechat-chat__bubble wechat-chat__bubble--${
+          isSelf ? 'self' : 'other'
+        } wechat-chat__bubble--themed`}
+      >
+        <p className="wechat-chat__dialogue">{item.text}</p>
+      </div>
+    </div>
   );
 
   if (isSelf) {
     return (
       <div className="wechat-chat__row wechat-chat__row--self">
-        <div className="wechat-chat__self-body">
-          <div className="wechat-chat__bubble wechat-chat__bubble--self">
-            {bubbleBody}
-          </div>
-        </div>
-        <ChatAvatar name={senderName} isProtagonist />
+        <div className="wechat-chat__self-body">{messageStack}</div>
+        <CharacterAvatar
+          name={senderName}
+          isProtagonist
+          profile={profile}
+          align="right"
+          onProfileHover={onProfileHover}
+        />
       </div>
     );
   }
 
   return (
     <div className="wechat-chat__row wechat-chat__row--other">
-      <ChatAvatar name={senderName} />
-      <div className="wechat-chat__other-body">
-        <span
-          className="wechat-chat__name"
-          style={{ '--name-accent': theme.accent } as React.CSSProperties}
-        >
-          {senderName}
-        </span>
-        <div className="wechat-chat__bubble wechat-chat__bubble--other">
-          {bubbleBody}
-        </div>
-      </div>
+      <CharacterAvatar
+        name={senderName}
+        profile={profile}
+        align="left"
+        onProfileHover={onProfileHover}
+      />
+      <div className="wechat-chat__other-body">{messageStack}</div>
     </div>
   );
 }
@@ -89,9 +107,15 @@ function ChatBubble({ item }: { item: StoryTimelineItem }) {
 function TimelineEntry({
   item,
   animate,
+  characterProfiles,
+  protagonistName,
+  onProfileHover,
 }: {
   item: StoryTimelineItem;
   animate: boolean;
+  characterProfiles: Map<string, RelationItem>;
+  protagonistName: string;
+  onProfileHover?: (profile: RelationItem | null) => void;
 }) {
   const className = animate
     ? 'wechat-chat__entry wechat-chat__entry--pop'
@@ -107,12 +131,22 @@ function TimelineEntry({
 
   return (
     <div className={className}>
-      <ChatBubble item={item} />
+      <ChatBubble
+        item={item}
+        characterProfiles={characterProfiles}
+        protagonistName={protagonistName}
+        onProfileHover={onProfileHover}
+      />
     </div>
   );
 }
 
-export function StoryTimeline({ items }: StoryTimelineProps) {
+export function StoryTimeline({
+  items,
+  characterProfiles,
+  protagonistName,
+  onProfileHover,
+}: StoryTimelineProps) {
   const seenIdsRef = useRef(new Set<string>());
 
   useEffect(() => {
@@ -132,6 +166,9 @@ export function StoryTimeline({ items }: StoryTimelineProps) {
           key={item.id}
           item={item}
           animate={!seenIdsRef.current.has(item.id)}
+          characterProfiles={characterProfiles}
+          protagonistName={protagonistName}
+          onProfileHover={onProfileHover}
         />
       ))}
     </div>

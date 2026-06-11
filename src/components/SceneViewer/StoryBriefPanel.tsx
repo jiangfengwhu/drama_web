@@ -4,7 +4,10 @@ import {
   STORY_BRIEF_SECTION,
 } from '../../constants/story-brief.const';
 import { useBriefRevealQueue } from '../../hooks/useBriefRevealQueue';
-import { buildSceneBriefText, parseRelationLines } from '../../services/story-brief.util';
+import {
+  buildRelationList,
+  buildCharacterProfileMap,
+} from '../../services/story-brief.util';
 import type { RelationItem } from '../../services/story-brief.util';
 import type { StoryBackground } from '../../types/story.types';
 import './StoryBriefPanel.css';
@@ -106,20 +109,24 @@ function buildBriefUnits(
     themeTitle !== background.title.trim()
       ? themeTitle
       : undefined;
-  const sceneText = buildSceneBriefText(background.summary, background.sceneNow);
-  const relations = parseRelationLines(background.relationships, protagonistName);
+  const sceneText = background.sceneNow.trim();
+  const relations = buildRelationList(
+    buildCharacterProfileMap(background.characters, protagonistName),
+    protagonistName,
+  );
 
   const units: BriefRevealUnit[] = [];
 
   if (displayTitle) {
     units.push({ id: 'title', kind: 'title', title: displayTitle, subtitle });
   }
-  if (background.detail.trim()) {
-    units.push({ id: 'detail', kind: 'detail', text: background.detail.trim() });
+  if (background.prologue.trim()) {
+    units.push({ id: 'detail', kind: 'detail', text: background.prologue.trim() });
   }
   if (sceneText.trim()) {
     units.push({ id: 'scene', kind: 'scene', text: sceneText.trim() });
   }
+
   for (const item of relations) {
     units.push({ id: item.id, kind: 'relation', item });
   }

@@ -1,12 +1,29 @@
 .scene-viewer {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   flex: 1;
   height: 100%;
   min-height: 0;
   max-height: 100%;
   overflow: hidden;
   animation: sceneEnter 0.6s ease-out;
+}
+
+.scene-viewer__profile-panel {
+  display: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
+@media (min-width: 901px) {
+  .scene-viewer {
+    display: grid;
+    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+  }
+
+  .scene-viewer__profile-panel {
+    display: block;
+  }
 }
 
 @keyframes sceneEnter {
@@ -20,16 +37,40 @@
   }
 }
 
-.scene-viewer__brief-panel {
+.scene-viewer__chat-panel {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  height: 100%;
   min-height: 0;
+  background: #111114;
   overflow: hidden;
+  --chat-dock-content-height: 9.25rem;
+  --chat-dock-scroll-gap: 1rem;
+  --chat-dock-bottom-inset: calc(0.75rem + var(--safe-area-bottom));
+  --chat-dock-reserve: calc(
+    var(--chat-dock-content-height) + var(--chat-dock-bottom-inset) + var(--chat-dock-scroll-gap)
+  );
 }
 
 @media (min-width: 901px) {
-  .scene-viewer__brief-panel {
-    height: 100%;
+  .scene-viewer__chat-panel {
+    --chat-dock-content-height: 8.25rem;
+    --chat-dock-scroll-gap: 0.5rem;
+    --chat-dock-bottom-inset: var(--safe-area-bottom);
+    --chat-dock-reserve: calc(
+      var(--chat-dock-content-height) + var(--chat-dock-bottom-inset) + var(--chat-dock-scroll-gap)
+    );
   }
+}
+
+.scene-viewer__chat-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-height: min-content;
+  padding: 0.75rem 0.75rem 0;
 }
 
 .scene-viewer__visual {
@@ -196,17 +237,6 @@
   max-height: calc(100vh - 4rem);
 }
 
-.scene-viewer__chat-panel {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-height: 0;
-  background: #111114;
-  overflow: hidden;
-  --chat-dock-reserve: calc(9.25rem + env(safe-area-inset-bottom, 0px));
-}
-
 .scene-viewer__chat-panel--dock-reserved .scene-viewer__messages {
   padding-bottom: var(--chat-dock-reserve);
 }
@@ -222,8 +252,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  pointer-events: none;
   z-index: 4;
+  pointer-events: none;
 }
 
 .scene-viewer__dock-layer {
@@ -231,6 +261,7 @@
   left: 0;
   right: 0;
   bottom: 0;
+  z-index: 1;
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
@@ -246,6 +277,9 @@
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0);
+  background: #111114;
+  padding-bottom: var(--chat-dock-bottom-inset);
+  box-shadow: 0 -8px 20px rgba(17, 17, 20, 0.75);
 }
 
 .scene-viewer__dock-layer--loading {
@@ -650,79 +684,8 @@
 }
 
 @media (max-width: 900px) {
-  .scene-viewer {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
-    height: 100%;
-    min-height: 0;
-    max-height: 100%;
-  }
-
-  .scene-viewer__brief-panel {
-    flex: 0 0 auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    overflow: hidden;
-    transition: max-height 0.42s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .scene-viewer__brief-panel:has(.story-brief--collapsed) {
-    flex: 0 0 auto;
-    height: auto;
-    max-height: none;
-  }
-
-  .scene-viewer__brief-panel:has(.story-brief--expanded:not(.story-brief--collapsed)) {
-    position: relative;
-    z-index: 5;
-    max-height: 46dvh;
-    overflow: visible;
-  }
-
-  .scene-viewer:has(.story-brief--expanded:not(.story-brief--collapsed)) .scene-viewer__chat-panel {
-    position: relative;
-    z-index: 1;
-  }
-
-  .scene-viewer:has(.story-brief--expanded:not(.story-brief--collapsed)) .scene-viewer__chat-panel::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1.25rem;
-    pointer-events: none;
-    z-index: 3;
-    opacity: 1;
-    background: linear-gradient(
-      180deg,
-      rgba(0, 0, 0, 0.38) 0%,
-      transparent 100%
-    );
-    animation: chatUnderBriefFade 0.42s ease both;
-  }
-
-  @keyframes chatUnderBriefFade {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  .scene-viewer__overlay {
-    background: linear-gradient(
-      180deg,
-      transparent 40%,
-      rgba(10, 10, 15, 0.98) 100%
-    ) !important;
-  }
-
-  .scene-viewer__chat-panel {
-    height: 100%;
-    min-height: 0;
+  .scene-viewer__chat-flow {
+    padding: 0.65rem 0.65rem 0;
   }
 
   .scene-viewer__content {

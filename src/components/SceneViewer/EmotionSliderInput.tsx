@@ -19,11 +19,6 @@ function indexFromSliderValue(value: number, count: number): number {
   return Math.round((value / 100) * (count - 1));
 }
 
-function sliderValueFromIndex(index: number, count: number): number {
-  if (count <= 1) return 0;
-  return (index / (count - 1)) * 100;
-}
-
 export function EmotionSliderInput({
   lines,
   disabled,
@@ -45,13 +40,6 @@ export function EmotionSliderInput({
     if (!activeLine.trim() || disabled) return;
     onSubmit(activeLine);
   }, [activeLine, disabled, onSubmit]);
-
-  const lineCount = lines.length;
-
-  const handleEmojiSelect = (index: number) => {
-    if (disabled) return;
-    setSliderValue(sliderValueFromIndex(index, lineCount));
-  };
 
   useEffect(() => {
     if (!previewRef.current) return;
@@ -95,9 +83,9 @@ export function EmotionSliderInput({
         </button>
       </div>
 
-      <div className="emotion-slider__emoji-track">
+      <div className="emotion-slider__track-wrap">
         <div
-          className="emotion-slider__track-wrap"
+          className="emotion-slider__track-inner"
           style={{ '--pct': sliderValue / 100 } as CSSProperties}
         >
           <div className="emotion-slider__track-fill" aria-hidden />
@@ -118,24 +106,6 @@ export function EmotionSliderInput({
             aria-valuetext={activeLine}
             onChange={(event) => setSliderValue(Number(event.target.value))}
           />
-        </div>
-
-        <div className="emotion-slider__emoji-stops">
-          {EMOTION_SLIDER_EMOJIS.slice(0, lineCount).map((emoji, index) => (
-            <button
-              key={emoji}
-              type="button"
-              tabIndex={-1}
-              className={`emotion-slider__emoji-stop${
-                index === activeIndex ? ' emotion-slider__emoji-stop--active' : ''
-              }`}
-              disabled={disabled}
-              aria-label={`第 ${index + 1} 档情绪`}
-              onClick={() => handleEmojiSelect(index)}
-            >
-              {emoji}
-            </button>
-          ))}
         </div>
       </div>
     </div>

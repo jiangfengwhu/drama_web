@@ -36,6 +36,7 @@ export const BANNED_CHEAP_PHRASES = [
   '龙王',
   '战神',
   '赘婿',
+  '嘴角勾起',
 ] as const;
 
 const UNIVERSAL_CRAFT_BLOCK = `【好文共通法则 — 互动短剧亦适用】
@@ -45,7 +46,9 @@ const UNIVERSAL_CRAFT_BLOCK = `【好文共通法则 — 互动短剧亦适用�
 4. 冲突是两难：让主角在「体面/利益/情感/道义」间取舍，而非简单的善恶对峙。
 5. 节制即高级：越激烈的场面，台词越短、越冷；暴怒少用感叹号连用，羞辱不用粗鄙堆砌。
 6. 命名与场景要落地：人物用常见但好记的中文名；场景写可感的空间（材质、光线、距离），忌空泛「豪门」「顶级」。
-7. CARD 台词亦须入戏：七档情绪是同一人物在同一情境下的七种自持/失控方式，不是网文金句摘抄。`;
+7. CARD 台词亦须入戏：七档情绪是同一人物在同一情境下的七种自持/失控方式，不是网文金句摘抄。
+8. 接戏先于爽点：NPC 须先回应上一句（主角或另一位 NPC），再推进；禁止「幻词」——前文与当前句均未出现的词（如「尊严」「面子」「骨气」），NPC 不得突然拿来反问或嘲讽。
+9. 群戏有三角：场上人物彼此有立场与旧怨，不是排队对主角独白；须出现 NPC↔NPC 的交锋、帮腔、拆台或默契配合。`;
 
 interface ThemeCraftProfile {
   anchors: string;
@@ -196,15 +199,36 @@ function resolveCraftProfile(themeId: ThemeId): ThemeCraftProfile {
 export function buildBannedPhrasesBlock(): string {
   return `【禁用廉价表达 — 命中即重写】
 ${BANNED_CHEAP_PHRASES.map((p) => `· ${p}`).join('\n')}
-以及同类网文模板句（咆哮羞辱、围观震惊、系统提示体、霸总宣告体）。`;
+以及同类网文模板句（咆哮羞辱、围观震惊、系统提示体、霸总宣告体、未接上文的概念反问如「尊严？」「面子？」）。`;
 }
 
-export function buildCraftPromptBlock(config: StoryConfig): string {
+/** 注入 system / turn prompt：对话因果与接词 */
+export const DIALOGUE_CONTINUITY_BLOCK = `【对话连贯铁律 — 每回合 NPC 必守】
+1. 先接后推：每条 NPC 台词须接「上一句」——可以是主角，也可以是另一位 NPC（回声、反驳、插话、帮腔、拆台均可）。
+2. 禁幻词反问：NPC 不得用「XX？」起句或嘲讽，除非 XX 已在（a）主角本回合台词、（b）上一轮主角台词、（c）本回合已写 NARR/MSG 中出现。
+3. 群戏非审讯：禁止所有 NPC 逐句只对主角喊话（句句以「你」为对象）。每回合至少 1 条 MSG 须是 NPC 对 NPC（台词里出现对方姓名/称谓，如「林小姐」「周律」，或明确接上一 NPC 的话）。
+4. 多人因果链：2 条以上 NPC 时，后句须接前句人物或立场，形成三角/多边交锋；禁止三人各抛一句只对人主角的罐头台词。
+5. 每回合信息增量 ≤1：至多引入一个新筹码/秘密/威胁，其余对白用来消化、施压、内讧或动摇。
+6. 写 NPC 前自检：是否有人在对另一 NPC 说话？是否至少一条 NPC↔NPC？首条接主角后，第二条是否接前 NPC 或当面拆台？任一项否 → 重写 MSG 段。`;
+
+/** 开场群戏 — 主角尚未开口时的 NPC 调度 */
+export const OPENING_ENSEMBLE_BLOCK = `【开场群戏 — 主角未发言前】
+1. 开场 MSG 全部写 NPC，禁止「你」或主角名。
+2. 至少 2 名 NPC 须出场对白；其中不少于 1 条须是 NPC 互相对话（争锋、配合、传话、压制、拆台皆可），不是人人只等主角表态。
+3. 推荐节奏：NPC A 对 NPC B 或场面发难 → NPC B 接招/或 NPC C 插话 → 再有一人把压力引向主角（此时才出现「你」相关暗示，仍不写主角 MSG）。
+4. 开场结束时，主角应感到「被卷入一场已在进行的博弈」，而非「排队听训话」。`;
+
+export function buildCraftPromptBlock(
+  config: StoryConfig,
+  isOpening = false,
+): string {
   const theme = resolveTheme(config);
   const profile = resolveCraftProfile(config.themeId);
 
   return `${UNIVERSAL_CRAFT_BLOCK}
 
+${DIALOGUE_CONTINUITY_BLOCK}
+${isOpening ? `\n${OPENING_ENSEMBLE_BLOCK}\n` : ''}
 【本题材文学参照与调性 — ${theme.title}】
 ${profile.anchors}
 氛围：${profile.tone}

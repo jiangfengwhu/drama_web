@@ -1,23 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { FREE_FORM_MODE_LABEL } from '../../constants/interaction.const';
 import { useBubbleRevealQueue } from '../../hooks/useBubbleRevealQueue';
-import { buildTurnLabel } from '../../services/story-brief.util';
+import type { RelationItem } from '../../services/story-brief.util';
+import {
+  buildCharacterProfileMap,
+  buildCharacterProfileMapFromLines,
+  buildRelationList,
+  mergeCharacterProfileMaps,
+  buildTurnLabel,
+} from '../../services/story-brief.util';
 import { scriptLinesToTimeline } from '../../services/script-text.util';
 import type { ScriptLine } from '../../types/script.types';
 import type { SceneMood, StoryBackground } from '../../types/story.types';
+import { ChatPrologue } from './ChatPrologue';
 import { EmotionSliderInput } from './EmotionSliderInput';
 import { ChatComposer } from './ChatComposer';
 import { ChatTimelineLoading } from './ChatTimelineLoading';
-import { StoryBriefPanel } from './StoryBriefPanel';
 import { StoryEndBanner } from './StoryEndBanner';
+import { SceneProfilePanel } from './SceneProfilePanel';
 import { StoryTimeline } from './StoryTimeline';
 import './SceneViewer.css';
 import './StoryTimeline.css';
-import './StoryBriefPanel.css';
+import './ChatPrologue.css';
+import './SceneProfilePanel.css';
+import './CharacterAvatar.css';
 import './ChatComposer.css';
 import './StoryEndBanner.css';
 import './EmotionSliderInput.css';
-import './ChatComposer.css';
 
 interface SceneViewerProps {
   background: StoryBackground;
@@ -63,8 +72,29 @@ export function SceneViewer({
   const messagesRef = useRef<HTMLDivElement>(null);
   const [freeFormMode, setFreeFormMode] = useState(false);
   const [awaitingTurn, setAwaitingTurn] = useState(false);
+  const [hoveredProfile, setHoveredProfile] = useState<RelationItem | null>(
+    null,
+  );
 
   const turnLabel = useMemo(() => buildTurnLabel(turnIndex), [turnIndex]);
+  const guideStreaming = isStreaming && committedLines.length === 0;
+
+  const characterProfiles = useMemo(() => {
+    const fromGuide = buildCharacterProfileMap(
+      background.characters,
+      protagonistName,
+    );
+    const fromDialogue = buildCharacterProfileMapFromLines(
+      committedLines,
+      protagonistName,
+    );
+    return mergeCharacterProfileMaps(fromGuide, fromDialogue);
+  }, [background.characters, committedLines, protagonistName]);
+
+  const relationList = useMemo(
+    () => buildRelationList(characterProfiles, protagonistName),
+    [characterProfiles, protagonistName],
+  );
 
   useEffect(() => {
     if (!isStreaming) return;
@@ -165,13 +195,14 @@ export function SceneViewer({
 
   return (
     <div className={`scene-viewer scene-viewer--${mood}`}>
-      <div className="scene-viewer__brief-panel">
-        <StoryBriefPanel
+      <div className="scene-viewer__profile-panel">
+        <SceneProfilePanel
           background={background}
-          protagonistName={protagonistName}
           themeTitle={themeTitle}
           turnLabel={turnLabel}
-          guideStreaming={isStreaming && committedLines.length === 0}
+          relations={relationList}
+          hoveredProfile={hoveredProfile}
+          loading={guideStreaming}
         />
       </div>
 
@@ -181,7 +212,20 @@ export function SceneViewer({
         }`}
       >
         <div className="scene-viewer__messages" ref={messagesRef}>
-          <StoryTimeline items={visibleItems} />
+          <div className="scene-viewer__chat-flow">
+            <ChatPrologue
+              background={background}
+              themeTitle={themeTitle}
+              turnLabel={turnLabel}
+              loading={guideStreaming}
+            />
+            <StoryTimeline
+              items={visibleItems}
+              characterProfiles={characterProfiles}
+              protagonistName={protagonistName}
+              onProfileHover={setHoveredProfile}
+            />
+          </div>
         </div>
 
         <div className="scene-viewer__chat-dock">
