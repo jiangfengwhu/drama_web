@@ -20,12 +20,14 @@ import { ConversationDrawer } from './ConversationDrawer';
 import { ChatComposer } from './ChatComposer';
 import { ChatTimelineLoading } from './ChatTimelineLoading';
 import { StoryEndBanner } from './StoryEndBanner';
+import { SceneTransitionBanner } from './SceneTransitionBanner';
 import { StoryTimeline } from './StoryTimeline';
 import './SceneViewer.css';
 import './StoryTimeline.css';
 import './CharacterAvatar.css';
 import './ChatComposer.css';
 import './StoryEndBanner.css';
+import './SceneTransitionBanner.css';
 import './ConversationListPanel.css';
 import './ConversationDrawer.css';
 import './ChatThreadHeader.css';
@@ -51,6 +53,8 @@ interface SceneViewerProps {
   onSubmit?: (text: string) => Promise<boolean>;
   onSelectThread: (threadId: string) => void;
   onPrivateChat: (npcName: string) => void;
+  pendingSceneThread?: ChatThread;
+  onAdvanceToNextScene?: () => void;
 }
 
 export function SceneViewer({
@@ -74,6 +78,8 @@ export function SceneViewer({
   onSubmit,
   onSelectThread,
   onPrivateChat,
+  pendingSceneThread,
+  onAdvanceToNextScene,
 }: SceneViewerProps) {
   const messagesRef = useRef<HTMLDivElement>(null);
   const [awaitingTurn, setAwaitingTurn] = useState(false);
@@ -187,10 +193,28 @@ export function SceneViewer({
   const showEndBanner =
     storyComplete && interactionReady && Boolean(onLeaveStory);
 
+  const showSceneTransition =
+    Boolean(pendingSceneThread) &&
+    activeThread?.status === 'readonly' &&
+    activeThread.kind === 'scene' &&
+    interactionReady &&
+    !isStreaming &&
+    !storyComplete &&
+    Boolean(onAdvanceToNextScene);
+
+  const showReadonlyHint =
+    !canWriteActiveThread &&
+    activeThread?.status === 'readonly' &&
+    !showSceneTransition;
+
   const showLoading =
     awaitingTurn || (!interactionReady && (isStreaming || showQueueLoading));
   const reserveDock =
-    (showInput && canWriteActiveThread) || storyComplete || isStreaming || awaitingTurn;
+    (showInput && canWriteActiveThread) ||
+    storyComplete ||
+    showSceneTransition ||
+    isStreaming ||
+    awaitingTurn;
 
   useEffect(() => {
     if (!messagesRef.current) return;
@@ -248,11 +272,11 @@ export function SceneViewer({
           </div>
         </div>
 
-        {!canWriteActiveThread && activeThread?.status === 'readonly' ? (
+        {!showReadonlyHint ? null : (
           <div className="scene-viewer__readonly-hint" aria-live="polite">
             该场景已完结，仅可查看历史消息
           </div>
-        ) : null}
+        )}
 
         <div className="scene-viewer__chat-dock">
           <div
@@ -280,6 +304,23 @@ export function SceneViewer({
                 onSubmit={handleComposerSubmit}
               />
             </div>
+          </div>
+
+          <div
+            className={`scene-viewer__dock-layer${
+              showSceneTransition ? ' scene-viewer__dock-layer--visible' : ''
+            }`}
+            aria-hidden={!showSceneTransition}
+          >
+            {pendingSceneThread && onAdvanceToNextScene ? (
+              <SceneTransitionBanner
+                slugline={
+                  pendingSceneThread.subtitle?.trim() ||
+                  pendingSceneThread.title
+                }
+                onEnter={onAdvanceToNextScene}
+              />
+            ) : null}
           </div>
 
           <div

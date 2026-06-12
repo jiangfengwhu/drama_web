@@ -1,0 +1,1914 @@
+{
+  "version": "1.0",
+  "updatedAt": "2026-06-10",
+  "_doc": "互动短剧统一配置：/create 选题卡片 + AI 故事蓝图。修改 themes 下对应 id 即可同时影响选题页与剧情生成。字段说明见 story-bible.types.ts",
+  "themes": {
+    "business-war": {
+      "id": "business-war",
+      "version": "1.0",
+      "meta": {
+        "title": "商战逆袭",
+        "subtitle": "资本博弈 · 权力巅峰",
+        "genre": [
+          "商战",
+          "逆袭",
+          "都市"
+        ],
+        "audience": "male",
+        "trendTags": [
+          "重生记忆",
+          "股权博弈",
+          "打脸逆袭",
+          "规则内反杀"
+        ],
+        "referenceWorks": [
+          "大江大河",
+          "人民的名义",
+          "半泽直树"
+        ]
+      },
+      "logline": "携记忆或底牌重返资本牌桌，在规则与人情之间吞并仇敌、改写版图。",
+      "pitch": "主角被旧势力围剿，表面是商业谈判，底下是股权、条款与人情债。每回合须用具体数字、合同、把柄推进，胜在算路而非吼叫。公开群聊是战场，私聊换情报与交易。",
+      "coreThemes": [
+        "权力与良知",
+        "规则内的复仇",
+        "信任即筹码"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "亦舒式克制+周梅森式权力话术；展示用座次、敬称、谁先开口。",
+        "pacing": "快剪：每 3-5 回合一个 Beat 闭合，宜 META: CUT 换谈判场。",
+        "emotionalRegister": "爽在布局收网，忌空喊「商业帝国」。"
+      },
+      "storyWorld": {
+        "era": "当代都市",
+        "setting": "写字楼、会所、会议室、发布会",
+        "socialRules": [
+          "资本场讲证据与流程",
+          "舆论与监管是变量",
+          "人情债可换算成条款"
+        ],
+        "keyLocations": [
+          "INT. 顶层会议室 - 白天",
+          "INT. 私密会所包厢 - 夜",
+          "EXT. 发布会现场 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "被逐出牌桌后归来的操盘手/继承人",
+        "fatalFlaw": "过度自信或不敢信任盟友",
+        "desire": "夺回控制权并清算旧账",
+        "stakes": "失去公司、家族名誉或自由",
+        "arc": "被动挨打 → 设局反杀 → 承担代价后的新秩序"
+      },
+      "antagonistForces": [
+        {
+          "label": "旧势力话事人",
+          "motivation": "维持既得利益",
+          "tactics": "程序围剿、舆论、挖黑料"
+        },
+        {
+          "label": "伪盟友",
+          "motivation": "两面下注",
+          "tactics": "泄密、假合作"
+        }
+      ],
+      "coreConflicts": [
+        "并购/对赌/股权",
+        "家族内斗",
+        "公义与利益的撕扯"
+      ],
+      "informationGap": "隐藏持股、代持协议、海外资产或关键证人未露面。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：被羞辱/被逐，亮出第一张底牌",
+        "act2": "中盘：多线博弈，盟友背叛，监管介入",
+        "act3": "终局：发布会/股东大会式公开对决",
+        "finale": "胜负须有具体资产/人事结果"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒内建立资本危局",
+          "sceneExamples": [
+            "INT. 董事会 - 白天"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "信息增量+私聊换筹码",
+          "sceneExamples": [
+            "INT. 律所 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "公开摊牌",
+          "sceneExamples": [
+            "INT. 发布会 - 夜"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "行业术语+模糊承诺（「走流程」「另约」）；威胁包装成「为你好」。",
+        "taboo": "禁止空喊吞并、反派降智送脸。"
+      },
+      "presentation": {
+        "description": "你携重生记忆归来，面对昔日仇敌的围剿。每一次决策，都在改写商业版图。",
+        "gradient": "linear-gradient(135deg, #1a1208 0%, #3d2e0a 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&q=80",
+        "maleHook": "被挑衅、被围剿——选择如何反击，如何吞并对方资产",
+        "femaleHook": "商战背后的情感纠葛，误会与救赎交织",
+        "fanqieTag": "都市日常",
+        "sortOrder": 10
+      }
+    },
+    "rebirth-revenge": {
+      "id": "rebirth-revenge",
+      "version": "1.0",
+      "meta": {
+        "title": "重生复仇",
+        "subtitle": "打脸逆袭 · 清算旧账",
+        "genre": [
+          "重生",
+          "复仇",
+          "女频爽剧"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "双重生",
+          "女强复仇",
+          "以牙还牙",
+          "寒门斗权贵"
+        ],
+        "referenceWorks": [
+          "迎凤归",
+          "知否",
+          "墨雨云间"
+        ]
+      },
+      "logline": "重生回到被害前夜，这一世要把仇人一件件送入局。",
+      "pitch": "2025-2026 爆款逻辑：重生不是开金手指，而是带着记忆精准拆局。每场戏完成一个复仇小目标（药、婚约、名誉、财产），节奏快、爽点密，忌长情墨迹。",
+      "coreThemes": [
+        "因果清算",
+        "女性觉醒",
+        "信息差即武器"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "短句、刀口；前世闪回仅 1 句对照，禁止长回忆。",
+        "pacing": "每 2-3 回合一个复仇小胜；Beat 闭合即 CUT。",
+        "emotionalRegister": "爽在「以其人之道」；忌无意义虐主。"
+      },
+      "storyWorld": {
+        "era": "古代/民国/当代均可，须自洽",
+        "setting": "府邸、宴会、内院、公堂",
+        "socialRules": [
+          "名节与婚约是枷锁",
+          "嫡庶/门第决定话语权",
+          "证据与舆论可杀人"
+        ],
+        "keyLocations": [
+          "INT. 正厅 - 日",
+          "INT. 闺阁 - 夜",
+          "EXT. 宴会 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "重生归来的受害者/被污名者",
+        "fatalFlaw": "复仇心切可能误伤无辜",
+        "desire": "讨回公道并让仇人付出代价",
+        "stakes": "再次失去性命、家族或名誉",
+        "arc": "隐忍布局 → 当众反杀 → 选择宽恕或赶尽杀绝"
+      },
+      "antagonistForces": [
+        {
+          "label": "伪善姐妹/继室",
+          "motivation": "独占资源",
+          "tactics": "下药、栽赃、舆论"
+        },
+        {
+          "label": "权贵庇护人",
+          "motivation": "维护秩序",
+          "tactics": "以法压人、门第碾压"
+        }
+      ],
+      "coreConflicts": [
+        "复仇 vs 良知",
+        "旧情 vs 利益",
+        "公开名节 vs 私下了结"
+      ],
+      "informationGap": "仇人背后还有更高层推手；主角亦藏一张未亮的牌。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "重生首夜：确认时间线，设第一个套",
+        "act2": "连环复仇：每局揭一层皮",
+        "act3": "权贵正面交锋，真相总爆发",
+        "finale": "仇人身败名裂或伏法，主角有新人生选择"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "立刻亮出重生认知差",
+          "sceneExamples": [
+            "INT. 婚房 - 夜"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "以其人之道还治其人之身",
+          "sceneExamples": [
+            "INT. 宴会 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "当众揭穿",
+          "sceneExamples": [
+            "INT. 公堂/正厅 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "表面客气，底下带刺；每人一种社交面具。",
+        "taboo": "禁止长段哭诉、禁止全员降智。"
+      },
+      "presentation": {
+        "description": "重生回到被害前夜。这一世，你要让所有人付出代价。",
+        "gradient": "linear-gradient(135deg, #1a0810 0%, #3d1020 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=800&q=80",
+        "maleHook": "布局复仇，一击致命",
+        "femaleHook": "手撕白莲花，夺回属于自己的一切",
+        "fanqieTag": "重生复仇",
+        "sortOrder": 100
+      }
+    },
+    "ceo-romance": {
+      "id": "ceo-romance",
+      "version": "1.0",
+      "meta": {
+        "title": "豪门总裁",
+        "subtitle": "疯批男主 · 极致偏宠",
+        "genre": [
+          "总裁",
+          "契约",
+          "都市爱情"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "隐婚",
+          "强张力",
+          "追妻/护短",
+          "职场修罗场"
+        ],
+        "referenceWorks": [
+          "京婚浓瘾",
+          "经典港剧豪门气质"
+        ]
+      },
+      "logline": "一纸契约绑你在他身边——他对外冷戾，只对你一人失控。",
+      "pitch": "2025 女频短剧仍重「极致偏宠+高张力」：误会要具体（人/物/时限），甜在行动而非宣言。商战线服务情感：每次危机都是关系试金石。",
+      "coreThemes": [
+        "占有与尊重的边界",
+        "契约与真心",
+        "阶级差下的选择"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "对白短、欲言又止；情绪用物件与称谓变化呈现。",
+        "pacing": "情感 Beat 与商战 Beat 交替；不宜同场拖过 5 回合。",
+        "emotionalRegister": "甜在护短与破例，忌工业糖精与辱骂式虐恋。"
+      },
+      "storyWorld": {
+        "era": "当代",
+        "setting": "集团总部、豪宅、晚宴、机场",
+        "socialRules": [
+          "媒体与董事会是压力",
+          "婚姻关联股权",
+          "秘书/助理是信息节点"
+        ],
+        "keyLocations": [
+          "INT. CEO 办公室 - 夜",
+          "INT. 订婚宴 - 夜",
+          "INT. 医院/车库 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "被卷入豪门棋局的普通人/隐藏身份者",
+        "fatalFlaw": "自尊过强或过度隐忍",
+        "desire": "被尊重地爱，或夺回人生主动权",
+        "stakes": "自由、事业、真心被践踏",
+        "arc": "被动签约 → 试探真心 → 共担代价或决裂"
+      },
+      "antagonistForces": [
+        {
+          "label": "豪门长辈/联姻对象",
+          "motivation": "家族利益",
+          "tactics": "舆论、经济胁迫"
+        },
+        {
+          "label": "前任/白月光",
+          "motivation": "不甘心",
+          "tactics": "挑拨、制造误会"
+        }
+      ],
+      "coreConflicts": [
+        "契约 vs 真心",
+        "家族 vs 个人",
+        "公开形象 vs 私密渴望"
+      ],
+      "informationGap": "男主隐藏的旧伤或商业危机；女主亦有未说的身份/目的。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "契约生效：羞辱或误会上马",
+        "act2": "并肩危机：护短与信任裂痕",
+        "act3": "公开站队：董事/媒体前抉择",
+        "finale": "HE/BE 须具体，非开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "契约关系+张力拉满",
+          "sceneExamples": [
+            "INT. 律师事务所 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "误会与护短交替",
+          "sceneExamples": [
+            "INT. 集团年会 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "公开抉择",
+          "sceneExamples": [
+            "INT. 新闻发布会 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "男主句短、命令式里藏关心；女主不卑不亢有刀口。",
+        "taboo": "禁止「女人你在玩火」、禁止无因咆哮。"
+      },
+      "presentation": {
+        "description": "一纸契约把你绑在他身边。他对外冷戾，只对你一人失控。",
+        "gradient": "linear-gradient(135deg, #1a1020 0%, #3d1a2e 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80",
+        "maleHook": "商战与情场双线，碾压情敌",
+        "femaleHook": "被他强势护短，甜到发齁",
+        "fanqieTag": "豪门总裁",
+        "sortOrder": 70
+      }
+    },
+    "urban-system": {
+      "id": "urban-system",
+      "version": "1.0",
+      "meta": {
+        "title": "都市脑洞",
+        "subtitle": "系统流 · 金手指",
+        "genre": [
+          "系统",
+          "都市",
+          "规则怪谈"
+        ],
+        "audience": "male",
+        "trendTags": [
+          "任务惩罚",
+          "规则漏洞",
+          "倒计时"
+        ],
+        "referenceWorks": [
+          "东野圭吾"
+        ]
+      },
+      "logline": "绑定异常系统，在都市规则里找生路。",
+      "pitch": "系统不是抽奖机，是命运隐喻；每条任务须有道德代价。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "爽在破局与底牌"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "都市脑洞典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 都市脑洞核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "都市脑洞典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "系统不是抽奖机，是命运隐喻；每条任务须有道德代价。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "意外绑定系统，每完成一次任务就解锁新能力。都市里，你是唯一开挂的人。",
+        "gradient": "linear-gradient(135deg, #0a1a18 0%, #1a3d35 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80",
+        "maleHook": "极限打压后亮底牌，系统奖励当场翻盘",
+        "femaleHook": "系统任务里藏着他的秘密，边搞钱边撩人",
+        "fanqieTag": "都市脑洞",
+        "sortOrder": 20
+      }
+    },
+    "master-descends": {
+      "id": "master-descends",
+      "version": "1.0",
+      "meta": {
+        "title": "高手下山",
+        "subtitle": "师父流 · 无敌开局",
+        "genre": [
+          "高手下山",
+          "都市",
+          "隐世"
+        ],
+        "audience": "male",
+        "trendTags": [
+          "扮猪吃虎",
+          "礼数碾压",
+          "人情世故"
+        ],
+        "referenceWorks": [
+          "古龙"
+        ]
+      },
+      "logline": "九师传艺，入城先遇礼数与眼色，再一击定局。",
+      "pitch": "出手宜少；羞辱用沉默与敬称完成。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "爽在破局与底牌"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "高手下山典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 高手下山核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "高手下山典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "出手宜少；羞辱用沉默与敬称完成。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "九位师父倾囊相授，你初入都市便卷入豪门纷争。低调？不存在的。",
+        "gradient": "linear-gradient(135deg, #1a1408 0%, #2e3d1a 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
+        "maleHook": "被轻视后一招制敌，全场震惊",
+        "femaleHook": "他表面纨绔，实则为你扫平一切障碍",
+        "fanqieTag": "高手下山",
+        "sortOrder": 30
+      }
+    },
+    "urban-martial": {
+      "id": "urban-martial",
+      "version": "1.0",
+      "meta": {
+        "title": "都市高武",
+        "subtitle": "异能觉醒 · 碾压",
+        "genre": [
+          "高武",
+          "灵气复苏",
+          "都市"
+        ],
+        "audience": "male",
+        "trendTags": [
+          "觉醒",
+          "暗面秩序",
+          "规则与暴力"
+        ],
+        "referenceWorks": [
+          "庆余年"
+        ]
+      },
+      "logline": "现代都市暗面，能力即权力延伸。",
+      "pitch": "异能用后果侧写，忌中二称号。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "爽在破局与底牌"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "都市高武典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 都市高武核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "都市高武典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "异能用后果侧写，忌中二称号。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "灵气复苏，旧秩序崩塌。你在都市暗面崛起，成为让人闻风丧胆的存在。",
+        "gradient": "linear-gradient(135deg, #0a1020 0%, #1a2840 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1559526324-593bc073d938?w=800&q=80",
+        "maleHook": "实力碾压，规则由我改写",
+        "femaleHook": "危险世界里，他是唯一护你周全的人",
+        "fanqieTag": "都市修真",
+        "sortOrder": 40
+      }
+    },
+    "suspense-brain": {
+      "id": "suspense-brain",
+      "version": "1.0",
+      "meta": {
+        "title": "悬疑脑洞",
+        "subtitle": "规则怪谈 · 破局",
+        "genre": [
+          "悬疑",
+          "规则",
+          "破局"
+        ],
+        "audience": "all",
+        "trendTags": [
+          "信息差",
+          "逻辑链",
+          "反转"
+        ],
+        "referenceWorks": [
+          "东野圭吾"
+        ]
+      },
+      "logline": "怪事连环，每条规则背后是陷阱。",
+      "pitch": "动机重于诡计；本格逻辑必须自洽。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "悬疑脑洞典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 悬疑脑洞核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "悬疑脑洞典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "动机重于诡计；本格逻辑必须自洽。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "怪事接连发生，每条规则背后都是陷阱。你要在绝境里找到生路。",
+        "gradient": "linear-gradient(135deg, #0a0a14 0%, #1a1a2e 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1509245853830-6837307a08da?w=800&q=80",
+        "maleHook": "识破规则漏洞，反杀幕后黑手",
+        "femaleHook": "步步惊心，信任与背叛只在一念之间",
+        "fanqieTag": "悬疑脑洞",
+        "sortOrder": 50
+      }
+    },
+    "rich-family": {
+      "id": "rich-family",
+      "version": "1.0",
+      "meta": {
+        "title": "豪门恩怨",
+        "subtitle": "家族秘辛 · 命运抉择",
+        "genre": [
+          "豪门",
+          "家族",
+          "继承"
+        ],
+        "audience": "all",
+        "trendTags": [
+          "嫡庶",
+          "继承权",
+          "血缘秘密"
+        ],
+        "referenceWorks": [
+          "雷雨"
+        ]
+      },
+      "logline": "豪门深似海，你是被遗弃的继承人。",
+      "pitch": "家族像法庭，爱也是筹码。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "豪门恩怨典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 豪门恩怨核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "豪门恩怨典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "家族像法庭，爱也是筹码。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "豪门深似海，你是被遗弃的嫡子/千金。真相揭开之时，谁将执掌家族权柄？",
+        "gradient": "linear-gradient(135deg, #1a0a14 0%, #3d1a2e 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=800&q=80",
+        "maleHook": "动用最高权力，直接将对手逐出家族",
+        "femaleHook": "揭开他的内心，改变悲剧结局",
+        "fanqieTag": "豪门总裁",
+        "sortOrder": 60
+      }
+    },
+    "urban-romance": {
+      "id": "urban-romance",
+      "version": "1.0",
+      "meta": {
+        "title": "都市言情",
+        "subtitle": "邂逅 · 纠缠 · 救赎",
+        "genre": [
+          "言情",
+          "都市",
+          "救赎"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "误会",
+          "职场",
+          "双向奔赴"
+        ],
+        "referenceWorks": [
+          "亦舒"
+        ]
+      },
+      "logline": "都市霓虹下，误会开局，选择改写关系。",
+      "pitch": "情感推进靠具体事件，非独白。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "都市言情典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 都市言情核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "都市言情典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "情感推进靠具体事件，非独白。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "都市霓虹下，一段始于误会的缘分。你的每个选择，都在改写两人的命运轨迹。",
+        "gradient": "linear-gradient(135deg, #1a1020 0%, #2e1a3d 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1514565131-fce0801ecf24?w=800&q=80",
+        "maleHook": "商战与情场双线并进，碾压情敌",
+        "femaleHook": "听到他的真实想法，强行达成 HE",
+        "fanqieTag": "青春甜宠",
+        "sortOrder": 80
+      }
+    },
+    "youth-sweet": {
+      "id": "youth-sweet",
+      "version": "1.0",
+      "meta": {
+        "title": "青春甜宠",
+        "subtitle": "校园职场 · 双向奔赴",
+        "genre": [
+          "青春",
+          "甜宠",
+          "成长"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "欢喜冤家",
+          "双向暗恋",
+          "护短"
+        ],
+        "referenceWorks": [
+          "八月长安"
+        ]
+      },
+      "logline": "从校园到职场，互怼里藏心动。",
+      "pitch": "甜在细节与行动，忌工业糖精。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "青春甜宠典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 青春甜宠核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "青春甜宠典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "甜在细节与行动，忌工业糖精。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "从校园到职场，欢喜冤家变恋人。每次互怼，都是心动的伏笔。",
+        "gradient": "linear-gradient(135deg, #1a1028 0%, #2e1a40 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800&q=80",
+        "maleHook": "公开护短，让全校/全公司知道你在他心上",
+        "femaleHook": "甜宠日常，误会一秒和解",
+        "fanqieTag": "青春甜宠",
+        "sortOrder": 90
+      }
+    },
+    "apocalypse": {
+      "id": "apocalypse",
+      "version": "1.0",
+      "meta": {
+        "title": "末世求生",
+        "subtitle": "囤货空间 · 灾变求生",
+        "genre": [
+          "末世",
+          "求生",
+          "人性"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "囤货",
+          "极寒/病毒",
+          "人性考验"
+        ],
+        "referenceWorks": [
+          "行尸走肉"
+        ]
+      },
+      "logline": "灾变降临，空间囤货是起点不是终点。",
+      "pitch": "资源须具体；人性比丧尸更危险。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "末世求生典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 末世求生核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "末世求生典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "资源须具体；人性比丧尸更危险。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "极寒/病毒/天灾降临，你有空间囤货。活下去，并保护你在乎的人。",
+        "gradient": "linear-gradient(135deg, #0a1218 0%, #1a2830 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&q=80",
+        "maleHook": "物资碾压，建立安全区称王",
+        "femaleHook": "囤货复仇两不误，不再做烂好人",
+        "fanqieTag": "末世",
+        "sortOrder": 110
+      }
+    },
+    "palace-intrigue": {
+      "id": "palace-intrigue",
+      "version": "1.0",
+      "meta": {
+        "title": "宫斗宅斗",
+        "subtitle": "权谋心计 · 步步为营",
+        "genre": [
+          "宫斗",
+          "宅斗",
+          "权谋"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "借刀杀人",
+          "名节",
+          "联盟"
+        ],
+        "referenceWorks": [
+          "甄嬛传"
+        ]
+      },
+      "logline": "深宫大宅，一步错满盘皆输。",
+      "pitch": "每句请安皆含刀；联盟随时反水。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "宫斗宅斗典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 宫斗宅斗核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "宫斗宅斗典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "每句请安皆含刀；联盟随时反水。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "深宫大宅门里，一步错满盘皆输。你要在算计中活到最后。",
+        "gradient": "linear-gradient(135deg, #1a1008 0%, #3d2810 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&q=80",
+        "maleHook": "权谋博弈，连根拔起敌对势力",
+        "femaleHook": "以智谋上位，不再任人摆布",
+        "fanqieTag": "宫斗宅斗",
+        "sortOrder": 120
+      }
+    },
+    "ancient-romance": {
+      "id": "ancient-romance",
+      "version": "1.0",
+      "meta": {
+        "title": "古风世情",
+        "subtitle": "谍战权谋 · 攀高枝",
+        "genre": [
+          "古风",
+          "世情",
+          "权谋"
+        ],
+        "audience": "female",
+        "trendTags": [
+          "门第",
+          "谍战",
+          "虐恋"
+        ],
+        "referenceWorks": [
+          "琅琊榜"
+        ]
+      },
+      "logline": "乱世宅门，情爱与权谋交织。",
+      "pitch": "称谓/礼制即权力；情爱不能脱离局。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "古风世情典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 古风世情核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "古风世情典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "称谓/礼制即权力；情爱不能脱离局。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "乱世宅门，情爱与权谋交织。每个选择都牵动家族命运。",
+        "gradient": "linear-gradient(135deg, #1a1408 0%, #2e2410 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=800&q=80",
+        "maleHook": "庙堂江湖两线，翻云覆雨",
+        "femaleHook": "虐恋与救赎，改写既定悲剧",
+        "fanqieTag": "古风世情",
+        "sortOrder": 130
+      }
+    },
+    "ancient-rebirth": {
+      "id": "ancient-rebirth",
+      "version": "1.0",
+      "meta": {
+        "title": "古风重生",
+        "subtitle": "逆转天命 · 改写史书",
+        "genre": [
+          "古风",
+          "重生",
+          "权谋"
+        ],
+        "audience": "all",
+        "trendTags": [
+          "重生",
+          "史书改写",
+          "庙堂"
+        ],
+        "referenceWorks": [
+          "庆余年"
+        ]
+      },
+      "logline": "重生到命运节点，改写史书与人心。",
+      "pitch": "权谋须因果；重生优势是信息差。",
+      "coreThemes": [
+        "选择有代价",
+        "信息差驱动张力",
+        "每回合局面必须变化"
+      ],
+      "toneAndStyle": {
+        "narrativeVoice": "展示而非告知；对白短、声口可辨。",
+        "pacing": "短剧节奏：Beat 闭合即考虑 CUT，忌同场拖沓。",
+        "emotionalRegister": "情在抉择与救赎"
+      },
+      "storyWorld": {
+        "era": "由题材自洽设定",
+        "setting": "古风重生典型空间：须具体可拍",
+        "socialRules": [
+          "世界规则一旦建立不可无理由打破",
+          "权力/资源决定话语权"
+        ],
+        "keyLocations": [
+          "INT. 古风重生核心场 - 日",
+          "EXT. 转场空间 - 夜"
+        ]
+      },
+      "protagonist": {
+        "archetype": "古风重生典型主角：被卷入局中的关键变量",
+        "fatalFlaw": "开场须暗示一项缺陷（傲、善、执、信错人）",
+        "desire": "题材核心欲望：生存/复仇/爱/权",
+        "stakes": "具体失败代价：人、名、财、命",
+        "arc": "被动 → 试探规则 → 主动破局 → 承担后果"
+      },
+      "antagonistForces": [
+        {
+          "label": "明面压制者",
+          "motivation": "维护既有秩序",
+          "tactics": "规则、舆论、暴力"
+        },
+        {
+          "label": "暗线操盘手",
+          "motivation": "隐藏利益",
+          "tactics": "借刀、信息操控"
+        }
+      ],
+      "coreConflicts": [
+        "权谋须因果；重生优势是信息差。",
+        "公开 vs 私密信息差"
+      ],
+      "informationGap": "至少一条关键秘密逐回合揭露，忌一次性倒光。",
+      "hookMechanics": {
+        "openingMustEstablish": [
+          "核心矛盾已在燃烧，非温吞铺垫",
+          "主角一项致命缺陷或限制",
+          "至少 1 处信息差炸弹",
+          "最后一条 MSG 须让用户想立刻输入"
+        ],
+        "perTurnPayoff": [
+          "用户台词/行为当回合须在 MSG 中得到回应",
+          "每回合 1 个新筹码/秘密/危险，禁止复读",
+          "群聊须含 NPC↔NPC 交锋"
+        ],
+        "climaxSignals": [
+          "主要秘密总爆发",
+          "公开摊牌或不可逆选择",
+          "联盟重组"
+        ],
+        "endingCriteria": [
+          "主线冲突闭环",
+          "情感/利益线有落点",
+          "核心悬念不悬空"
+        ]
+      },
+      "storyArc": {
+        "act1": "入局：危机上身，建立规则",
+        "act2": "升级：秘密泄露，联盟变化",
+        "act3": "摊牌：公开对决或情感/利益终极选择",
+        "finale": "主线闭环，留人回味不作开放式敷衍"
+      },
+      "beatRoadmap": [
+        {
+          "stage": "开场",
+          "dramaticGoal": "30 秒抓人",
+          "sceneExamples": [
+            "INT. 开场 - 日"
+          ]
+        },
+        {
+          "stage": "中盘",
+          "dramaticGoal": "局面偏移",
+          "sceneExamples": [
+            "INT. 中盘 - 夜"
+          ]
+        },
+        {
+          "stage": "高潮",
+          "dramaticGoal": "摊牌收束",
+          "sceneExamples": [
+            "INT. 终局 - 日"
+          ]
+        }
+      ],
+      "dialogueCraft": {
+        "voiceNotes": "每人一种声口；NPC↔NPC 须有交锋。",
+        "taboo": "廉价咆哮、围观震惊、未接上文反问。"
+      },
+      "presentation": {
+        "description": "重生回到命运转折点。这一次，你要让所有人知道——历史由你书写。",
+        "gradient": "linear-gradient(135deg, #1a1408 0%, #2e2410 50%, #0a0a0f 100%)",
+        "imageUrl": "https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=800&q=80",
+        "maleHook": "权谋博弈，将敌对势力连根拔起",
+        "femaleHook": "宫廷情劫，以真心换他回头",
+        "fanqieTag": "古风世情",
+        "sortOrder": 140
+      }
+    }
+  }
+}

@@ -15,11 +15,13 @@ import {
   ensurePrivateThread,
   getActiveMood,
   getActiveThread,
+  getPendingSceneThread,
   getThreadLines,
   isThreadWritable,
+  splitScriptLinesAtSceneCut,
   switchActiveThread,
 } from '../services/story-thread.util';
-import { prepareDisplayScriptLines } from '../services/script-text.util';
+import { prepareDisplayScriptLines, stripLeadingProtagonistEcho } from '../services/script-text.util';
 import type {
   SceneStreamState,
   SceneStreamUpdate,
@@ -42,6 +44,8 @@ function applyChunkUpdate(
     streamRevision: revision,
     isStreaming: true,
     mood: fields.mood !== undefined ? fields.mood : prev.mood,
+    sceneCut:
+      fields.sceneCut !== undefined ? fields.sceneCut : prev.sceneCut,
     lockedScript:
       fields.lockedScript !== undefined ? fields.lockedScript : prev.lockedScript,
     scriptLines:
@@ -56,13 +60,24 @@ function streamingLines(
   streamState: SceneStreamState | null,
   protagonistName: string,
   isOpeningStream: boolean,
+  activeThreadKind?: 'scene' | 'private',
 ): ScriptLine[] {
   if (!streamState?.isStreaming) return [];
 
-  return prepareDisplayScriptLines(streamState.scriptLines, {
+  const raw = prepareDisplayScriptLines(streamState.scriptLines, {
     stripProtagonist: isOpeningStream,
     protagonistName,
   });
+
+  if (!isOpeningStream) {
+    const withoutEcho = stripLeadingProtagonistEcho(raw, protagonistName);
+    if (streamState.sceneCut && activeThreadKind === 'scene') {
+      return splitScriptLinesAtSceneCut(withoutEcho).closingLines;
+    }
+    return withoutEcho;
+  }
+
+  return raw;
 }
 
 export function useStory() {
@@ -196,6 +211,16 @@ export function useStory() {
     setStreamState(null);
   }, []);
 
+  const advanceToNextScene = useCallback(() => {
+    setStoryState((prev) => {
+      if (!prev) return prev;
+      const pending = getPendingSceneThread(prev);
+      if (!pending) return prev;
+      return switchActiveThread(prev, pending.id);
+    });
+    setStreamState(null);
+  }, []);
+
   const openPrivateChat = useCallback(
     (npcName: string) => {
       if (!storyState) return;
@@ -230,7 +255,12 @@ export function useStory() {
     streamState,
     storyState?.config.protagonistName ?? '你',
     isOpeningStream,
+    activeThread?.kind,
   );
+
+  const pendingSceneThread = storyState
+    ? getPendingSceneThread(storyState)
+    : undefined;
 
   const displayBackground =
     isOpeningStream && streamState?.background
@@ -267,6 +297,8 @@ export function useStory() {
     startStory,
     submitAction,
     selectThread,
+    advanceToNextScene,
+    pendingSceneThread,
     openPrivateChat,
     resetStory,
     minActionLen: MIN_ACTION_LEN,

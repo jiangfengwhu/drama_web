@@ -63,6 +63,7 @@ export interface SceneStreamState {
   lockedScript?: string;
   background?: StoryBackground;
   mood?: SceneMood;
+  sceneCut?: SceneCutPayload;
   isStreaming: boolean;
   streamRevision: number;
 }
@@ -112,6 +113,7 @@ export type SceneStreamUpdate =
           | 'lockedScript'
           | 'background'
           | 'mood'
+          | 'sceneCut'
         >
       >;
     }

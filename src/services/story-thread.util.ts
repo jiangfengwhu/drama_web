@@ -4,6 +4,7 @@ import type {
   ChatThreadKind,
   SceneCutPayload,
   SceneHeadDraft,
+  ScenePrivateChatContext,
   StoryScene,
 } from '../types/story-scene.types';
 import type { SceneMood, StoryConfig, StoryState } from '../types/story.types';
@@ -252,10 +253,57 @@ function closeScene(state: StoryState, sceneId: string): StoryState {
   return { ...state, scenes, threads };
 }
 
+export function patchSceneIntro(
+  state: StoryState,
+  sceneId: string,
+  sceneText: string,
+): StoryState {
+  const intro = sceneText.trim();
+  if (!intro) return state;
+
+  return {
+    ...state,
+    scenes: state.scenes.map((scene) =>
+      scene.id === sceneId ? { ...scene, sceneIntro: intro } : scene,
+    ),
+  };
+}
+
+export function splitScriptLinesAtSceneCut(lines: ScriptLine[]): {
+  closingLines: ScriptLine[];
+  openingLines: ScriptLine[];
+} {
+  const sceneIdx = lines.findIndex((line) => line.kind === 'scene');
+  if (sceneIdx < 0) {
+    return { closingLines: lines, openingLines: [] };
+  }
+  return {
+    closingLines: lines.slice(0, sceneIdx),
+    openingLines: lines.slice(sceneIdx),
+  };
+}
+
+export function getPendingSceneThread(state: StoryState): ChatThread | undefined {
+  const active = getActiveThread(state);
+  if (!active?.sceneId || active.kind !== 'scene' || active.status !== 'readonly') {
+    return undefined;
+  }
+
+  const currentScene = state.scenes.find((scene) => scene.id === active.sceneId);
+  if (!currentScene) return undefined;
+
+  const nextScene = state.scenes.find(
+    (scene) => scene.order === currentScene.order + 1,
+  );
+  if (!nextScene) return undefined;
+
+  return state.threads[nextScene.groupThreadId];
+}
+
 export function applySceneCut(
   state: StoryState,
   cut: SceneCutPayload,
-): StoryState {
+): { state: StoryState; newThreadId: string; newSceneId: string } {
   let next = state;
 
   const activeScene = state.scenes.find((scene) => scene.status === 'active');
@@ -271,10 +319,13 @@ export function applySceneCut(
 
   const { scene, thread } = createSceneFromHead(draft, next.scenes.length);
   return {
-    ...next,
-    scenes: [...next.scenes, scene],
-    threads: { ...next.threads, [thread.id]: thread },
-    activeThreadId: thread.id,
+    state: {
+      ...next,
+      scenes: [...next.scenes, scene],
+      threads: { ...next.threads, [thread.id]: thread },
+    },
+    newThreadId: thread.id,
+    newSceneId: scene.id,
   };
 }
 
@@ -345,6 +396,37 @@ export function patchActiveSceneIntro(
       scene.id === active.id ? { ...scene, sceneIntro: intro } : scene,
     ),
   };
+}
+
+export function listPrivateThreadsForScene(
+  state: StoryState,
+  sceneId: string,
+): ChatThread[] {
+  return Object.values(state.threads)
+    .filter(
+      (thread) =>
+        thread.kind === 'private' &&
+        thread.sceneId === sceneId &&
+        thread.scriptLines.length > 0,
+    )
+    .sort((a, b) => a.lastActiveAt - b.lastActiveAt);
+}
+
+export function collectScenePrivateChatContexts(
+  state: StoryState,
+  scene: StoryScene,
+  protagonistName: string,
+): ScenePrivateChatContext[] {
+  const hero = protagonistName.trim();
+
+  return listPrivateThreadsForScene(state, scene.id).map((thread) => {
+    const npcName =
+      thread.participantNames
+        .find((name) => name.trim() !== hero && name.trim() !== '你')
+        ?.trim() || thread.title.trim();
+
+    return { npcName, lines: thread.scriptLines };
+  });
 }
 
 export function getActiveMood(state: StoryState): SceneMood {

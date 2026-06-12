@@ -14,6 +14,7 @@ import {
   type GuideSnapshot,
 } from './guide-text.util';
 import type { ScriptLine } from '../types/script.types';
+import type { ScenePrivateChatContext } from '../types/story-scene.types';
 import type { SceneCutPayload } from '../types/story-scene.types';
 import type { SceneMood } from '../types/story.types';
 import type { StoryTimelineItem } from '../types/story-timeline.types';
@@ -505,6 +506,25 @@ export function stripProtagonistMsgs(
   });
 }
 
+/** 去掉 AI 回合首条主角 echo（提交时已乐观写入） */
+export function stripLeadingProtagonistEcho(
+  lines: ScriptLine[],
+  protagonistName: string,
+): ScriptLine[] {
+  let skipped = false;
+  return lines.filter((line) => {
+    if (
+      !skipped &&
+      line.kind === 'msg' &&
+      isProtagonistSender(line.sender ?? '', protagonistName)
+    ) {
+      skipped = true;
+      return false;
+    }
+    return true;
+  });
+}
+
 export interface PrepareDisplayOptions {
   stripProtagonist?: boolean;
   protagonistName?: string;
@@ -589,6 +609,29 @@ export function formatRecentChatHistory(
   return formatted;
 }
 
+/** 场景群聊 prompt：汇总本场各 NPC 密谈记录 */
+export function formatScenePrivateChatHistory(
+  privateChats: ScenePrivateChatContext[],
+  protagonistName: string,
+  lineLimitPerThread: number,
+): string {
+  if (privateChats.length === 0) return '';
+
+  return privateChats
+    .map(({ npcName, lines }) => {
+      if (lines.length === 0) return '';
+      const history = formatRecentDialogueHistory(
+        lines,
+        protagonistName,
+        lineLimitPerThread,
+      );
+      if (!history) return '';
+      return `◆ 与【${npcName}】密谈（仅你与此人知情）\n${history}`;
+    })
+    .filter(Boolean)
+    .join('\n\n');
+}
+
 /** 近 2 轮是否仅原地对峙、无 NARR/局面变化 — 触发第三力量强制打断 */
 export function detectConfrontationStagnation(
   scriptLines: ScriptLine[],
@@ -623,22 +666,94 @@ export function detectConfrontationStagnation(
   return !hasPlotAdvance;
 }
 
+export interface SceneCutPressure {
+  protagonistTurnsInScene: number;
+  suggestCut: boolean;
+  forceCut: boolean;
+  stagnation: boolean;
+}
+
+export function countProtagonistTurnsInScene(
+  scriptLines: ScriptLine[],
+  protagonistName: string,
+): number {
+  return scriptLines.filter(
+    (line) =>
+      line.kind === 'msg' &&
+      isProtagonistSender(line.sender ?? '', protagonistName),
+  ).length;
+}
+
+export function resolveSceneCutPressure(
+  scriptLines: ScriptLine[],
+  protagonistName: string,
+  softCutAfter: number,
+  forceCutAfter: number,
+): SceneCutPressure {
+  const protagonistTurnsInScene = countProtagonistTurnsInScene(
+    scriptLines,
+    protagonistName,
+  );
+  const stagnation = detectConfrontationStagnation(scriptLines, protagonistName);
+
+  const forceCut =
+    protagonistTurnsInScene >= forceCutAfter ||
+    (stagnation && protagonistTurnsInScene >= Math.max(2, softCutAfter));
+
+  const suggestCut =
+    !forceCut &&
+    (protagonistTurnsInScene >= softCutAfter ||
+      (stagnation && protagonistTurnsInScene >= 2));
+
+  return {
+    protagonistTurnsInScene,
+    suggestCut,
+    forceCut,
+    stagnation,
+  };
+}
+
+export interface TurnContinuityOptions {
+  hasPrivateContext?: boolean;
+  cutPressure?: SceneCutPressure;
+}
+
 /** 回合 user prompt：接戏锚点，防止 NPC 幻词反问、各说各话 */
 export function buildTurnContinuityPrompt(
   scriptLines: ScriptLine[],
   protagonistName: string,
   userInput: UserTurnInput,
+  options: TurnContinuityOptions = {},
 ): string {
-  const stagnation = detectConfrontationStagnation(scriptLines, protagonistName);
+  const { hasPrivateContext = false, cutPressure } = options;
+  const stagnation =
+    cutPressure?.stagnation ??
+    detectConfrontationStagnation(scriptLines, protagonistName);
   const thirdForceRule = stagnation
     ? `⑤ 【强制】近 2 轮对峙无变局：本回合须先写 1 行 NARR 引入外部打断（闯入/来电/警报/物件落地/倒计时），再写 MSG:你|，禁止继续原地对骂。`
     : '⑤ NARR 仅在有外部打断或关键新画面时写 1 行；无则省略。';
+  const privateRule = hasPrivateContext
+    ? '⑥ 【密谈回流】参与密谈的 NPC 首条或次条 MSG 须兑现密谈筹码/条件/威胁/态度变化；未参与者不得引用密谈内容。'
+    : '';
+  const cutRule = cutPressure?.forceCut
+    ? '⑥ 【强制转场】收束 1-3 条 MSG 后本回合必须 META: CUT + SCENE:，禁止继续同 slugline 复读。'
+    : cutPressure?.suggestCut
+      ? '⑥ 【建议转场】Beat 可闭合时优先 META: CUT；若留场须 NARR 引入不可逆外部变量。'
+      : '';
+
+  const execSteps = cutPressure?.forceCut
+    ? `① MSG:你|… 以用户台词为正文（可极轻微润色）。
+② 2-4 条 MSG 收束本场节拍（须含 NPC↔NPC）→ META: CUT|slugline → SCENE: 新环境（均在 MOOD 之前）。`
+    : `① ${stagnation ? 'NARR: 外部打断（1 行）→ ' : ''}MSG:你|… 以用户台词为正文（可极轻微润色），行为指令勿写进括号。
+② 首条 NPC 当场接「你」——局势立刻偏移，须含信息增量（秘密/交易/软肋）。
+③ ≥1 条 NPC↔NPC 交锋；最后一条 MSG 须制造下一回合输入钩子（新筹码/新危险）。`;
 
   const inputBlock = formatUserInputForPrompt(userInput);
 
   return `【本回合接戏 — 违反则重写】
 ${inputBlock}
 ${stagnation ? '⚠ 检测到对峙僵持：本回合必须破局，禁止循环争吵。' : ''}
+${cutPressure?.forceCut ? '⚠ 场次超时：本回合必须 META: CUT 转场。' : ''}
 
 【反停滞三大铁律 — 本回合全部兑现】
 1. 情绪行为化：MSG:你| 以用户台词为主，行为指令写进 NARR 或他人反应，禁止括号旁白。
@@ -646,12 +761,12 @@ ${stagnation ? '⚠ 检测到对峙僵持：本回合必须破局，禁止循环
 3. 第三方打断：${stagnation ? '已僵持，NARR 强制写 1 行外部变量打断。' : '若对白将陷入复读，用 NARR 引入局外变量。'}
 
 执行顺序：
-① ${stagnation ? 'NARR: 外部打断（1 行）→ ' : ''}MSG:你|… 以用户台词为正文（可极轻微润色），行为指令勿写进括号。
-② 首条 NPC 当场接「你」——局势立刻偏移，须含信息增量（秘密/交易/软肋）。
-③ ≥1 条 NPC↔NPC 交锋；最后一条 MSG 须制造下一回合输入钩子（新筹码/新危险）。
+${execSteps}
 ④ 禁止幻词反问；禁止「你等着」「别逼我」式空转；同回合不重复同一施压角度。
 ${thirdForceRule}
-⑤ 接词须与上方【近期对白】一致，禁止复读。`;
+⑤ 接词须与上方【近期对白】一致，禁止复读。
+${privateRule}
+${cutRule}`;
 }
 
 /** 私聊回合：承接场景群聊，双人密谈 */

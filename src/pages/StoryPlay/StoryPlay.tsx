@@ -32,6 +32,8 @@ export function StoryPlayPage() {
     startStory,
     submitAction,
     selectThread,
+    advanceToNextScene,
+    pendingSceneThread,
     openPrivateChat,
     resetStory,
     minActionLen,
@@ -119,6 +121,8 @@ export function StoryPlayPage() {
           onSubmit={submitAction}
           onSelectThread={selectThread}
           onPrivateChat={openPrivateChat}
+          pendingSceneThread={pendingSceneThread}
+          onAdvanceToNextScene={advanceToNextScene}
         />
       </div>
     </Layout>

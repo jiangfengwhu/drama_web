@@ -67,3 +67,9 @@ export interface SceneHeadDraft {
   sceneIntro: string;
   atmosphere?: string;
 }
+
+/** 场景群聊 prompt 引用的单场密谈 */
+export interface ScenePrivateChatContext {
+  npcName: string;
+  lines: ScriptLine[];
+}

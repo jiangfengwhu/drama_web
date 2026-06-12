@@ -1,4 +1,5 @@
 import type { UserTurnInput } from '../types/user-input.types';
+import type { ScriptLine } from '../types/script.types';
 
 const ACTION_EN = /#\(([^)]*)\)/g;
 const ACTION_ZH = /#（([^）]*)）/g;
@@ -70,5 +71,20 @@ export function toPlayerAction(raw: string) {
     raw: parsed.raw,
     dialogue: parsed.dialogue,
     behaviors: parsed.behaviors,
+  };
+}
+
+/** 提交后立即展示的用户气泡（避免等 AI 回流时再插入导致跳动） */
+export function buildUserScriptLine(
+  userInput: UserTurnInput,
+  protagonistName: string,
+): ScriptLine | null {
+  const message = userInput.dialogue.trim() || userInput.raw.trim();
+  if (!message) return null;
+
+  return {
+    kind: 'msg',
+    sender: protagonistName.trim() || '你',
+    message,
   };
 }

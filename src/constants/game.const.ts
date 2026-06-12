@@ -1,5 +1,19 @@
 import type { StoryLength } from '../types/story.types';
 
+/** 同一 slugline 下主角出手次数 ≥ 此值：prompt 建议考虑 META: CUT */
+export const SCENE_SOFT_CUT_TURNS: Record<StoryLength, number> = {
+  short: 3,
+  medium: 4,
+  long: 6,
+};
+
+/** 同一 slugline 下主角出手次数 ≥ 此值：prompt 强制本回合 META: CUT（兜底） */
+export const SCENE_FORCE_CUT_TURNS: Record<StoryLength, number> = {
+  short: 5,
+  medium: 7,
+  long: 10,
+};
+
 /** Agnes 直连上游 */
 export const AGNES_API_BASE = 'https://apihub.agnes-ai.com';
 export const AGNES_API_ENDPOINT = `${AGNES_API_BASE}/v1/chat/completions`;
@@ -14,6 +28,9 @@ export const TURN_HISTORY_LINE_LIMIT = 36;
 
 /** 私聊 prompt 中引用的场景群聊行数上限 */
 export const PRIVATE_SCENE_CONTEXT_LINE_LIMIT = 28;
+
+/** 场景 prompt 中引用的每场密谈行数上限（按 thread） */
+export const SCENE_PRIVATE_CONTEXT_LINE_LIMIT = 24;
 
 export const REVEAL_CHARS_PER_TICK = 2;
 export const REVEAL_TICK_MS = 40;

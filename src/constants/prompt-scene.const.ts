@@ -13,9 +13,10 @@ export const PRIVATE_CHAT_RULES = `【私聊法则 — 场景内的场外密谈�
 
 export const SCENE_GROUP_CHAT_RULES = `【场景群聊法则 — 在场者才发言】
 1. 本 thread 对应当前电影场景；仅已在对话中出现的 NPC 可 MSG（渐进式 CAST）。
-2. 不在场的 NPC 不得 MSG；需要他们时用 META: CUT 转场或引导玩家私聊。
-3. 群聊推进 public 冲突；私聊推进 secret；两者信息差是核心张力。
-4. 群戏仍须 NPC↔NPC，禁止全员围观训话。`;
+2. 不在场的 NPC 不得 MSG；需要其物理在场时用 META: CUT 转场，或引导玩家私聊。
+3. 群聊推进 public 冲突；私聊推进 secret；Beat 闭合或场次过长须 CUT 换新 slugline。
+4. 仅参与密谈的 NPC 知晓密谈内容；其他在场 NPC 不得凭空引用；主角公开后全员方可接话。
+5. 回群聊时须让密谈筹码/条件/威胁在 MSG 中落地。`;
 
 export function buildSceneArchitecturePromptBlock(isPrivate: boolean): string {
   if (isPrivate) {
