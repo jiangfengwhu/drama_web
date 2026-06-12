@@ -27,6 +27,8 @@ export function StorySetupPage() {
     useAdmissionTicket();
 
   const [themeId, setThemeId] = useState<ThemeId>('business-war');
+  const [lastPresetThemeId, setLastPresetThemeId] =
+    useState<ThemeId>('business-war');
   const [length, setLength] = useState<StoryLength>('short');
   const [protagonistName, setProtagonistName] = useState('');
   const [customDescription, setCustomDescription] = useState('');
@@ -73,6 +75,20 @@ export function StorySetupPage() {
       observer.disconnect();
     };
   }, [isCustomTheme, presetThemes, updateScrollHints]);
+
+  const handleSelectPresetTheme = (id: ThemeId) => {
+    setLastPresetThemeId(id);
+    setThemeId(id);
+  };
+
+  const handleCustomToggle = () => {
+    if (isCustomTheme) {
+      setThemeId(lastPresetThemeId);
+      return;
+    }
+    setLastPresetThemeId(themeId);
+    setThemeId('custom');
+  };
 
   const handleStart = () => {
     setFormError(null);
@@ -162,9 +178,9 @@ export function StorySetupPage() {
             <button
               type="button"
               className={`story-setup__custom-toggle ${isCustomTheme ? 'story-setup__custom-toggle--active' : ''}`}
-              onClick={() => setThemeId('custom')}
+              onClick={handleCustomToggle}
             >
-              自定义主题
+              {isCustomTheme ? '返回预设主题' : '自定义主题'}
             </button>
           </div>
 
@@ -192,7 +208,7 @@ export function StorySetupPage() {
                         key={theme.id}
                         type="button"
                         className={`story-setup__theme ${themeId === theme.id ? 'story-setup__theme--active' : ''}`}
-                        onClick={() => setThemeId(theme.id)}
+                        onClick={() => handleSelectPresetTheme(theme.id)}
                         style={{ background: theme.gradient }}
                       >
                         {theme.fanqieTag && (
