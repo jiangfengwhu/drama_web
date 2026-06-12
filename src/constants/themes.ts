@@ -9,6 +9,7 @@ export {
   PRESET_THEMES,
   getThemeById,
   listPresetThemes,
+  resolveAudienceForConfig,
   resolveTheme,
   themesForAudience,
 } from '../services/story-theme.util';

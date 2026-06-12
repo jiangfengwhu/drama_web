@@ -23,7 +23,7 @@ export type ThemeId =
   | 'custom';
 
 export interface CustomThemeInput {
-  title: string;
+  /** 用户自定义故事设定全文，注入 Story Bible 与 AI 提示词 */
   description: string;
 }
 

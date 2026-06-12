@@ -79,32 +79,126 @@
   font-weight: 500;
 }
 
-.story-setup__themes {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.story-setup__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
-@media (max-width: 720px) {
-  .story-setup__themes {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.story-setup__section-head h2 {
+  margin: 0;
+}
+
+.story-setup__custom-toggle {
+  flex-shrink: 0;
+  padding: 0.38rem 0.72rem;
+  background: transparent;
+  border: 1px dashed var(--border-subtle);
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.story-setup__custom-toggle:hover {
+  border-color: rgba(245, 240, 232, 0.28);
+  color: var(--text-primary);
+}
+
+.story-setup__custom-toggle--active {
+  border-style: solid;
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+}
+
+.story-setup__themes-panel {
+  width: 100%;
+}
+
+.story-setup__themes-scroll-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.story-setup__themes-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  height: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.story-setup__themes-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.story-setup__themes {
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(148px, 160px);
+  gap: 0.75rem;
+  width: max-content;
+  height: 100%;
+}
+
+.story-setup__themes-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.22s ease;
+}
+
+.story-setup__themes-fade--visible {
+  opacity: 1;
+}
+
+.story-setup__themes-fade--left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    var(--bg-deep) 0%,
+    rgba(10, 10, 15, 0.72) 45%,
+    transparent 100%
+  );
+}
+
+.story-setup__themes-fade--right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    var(--bg-deep) 0%,
+    rgba(10, 10, 15, 0.72) 45%,
+    transparent 100%
+  );
 }
 
 .story-setup__theme {
   position: relative;
-  padding: 1.25rem;
+  height: 100%;
+  min-height: 0;
+  padding: 0.9rem 1rem;
   border: 1px solid var(--border-subtle);
   background: var(--bg-panel);
   color: var(--text-primary);
   cursor: pointer;
   text-align: left;
-  transition: all 0.25s ease;
+  transition: border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
 .story-setup__theme-tag {
   display: inline-block;
-  margin-bottom: 0.45rem;
+  margin-bottom: 0.4rem;
   padding: 0.12rem 0.4rem;
   font-family: var(--font-ui);
   font-size: 0.62rem;
@@ -112,10 +206,6 @@
   color: rgba(255, 255, 255, 0.72);
   background: rgba(0, 0, 0, 0.28);
   border-radius: 3px;
-}
-
-.story-setup__theme--custom {
-  border-style: dashed;
 }
 
 .story-setup__theme:hover {
@@ -130,59 +220,39 @@
 .story-setup__theme-title {
   display: block;
   font-family: var(--font-display);
-  font-size: 1.25rem;
-  margin-bottom: 0.25rem;
+  font-size: 1.1rem;
+  margin-bottom: 0.2rem;
+  line-height: 1.25;
 }
 
 .story-setup__theme-sub {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.story-setup__toggle-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-.story-setup__toggle {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
-  padding: 1.25rem;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-subtle);
+.story-setup__theme-custom-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  padding: 0.9rem 1rem;
+  margin: 0;
+  border: 1px solid var(--accent-gold);
+  box-shadow: 0 0 0 1px var(--accent-gold);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.25s ease;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  resize: none;
 }
 
-.story-setup__toggle small {
-  font-size: 0.75rem;
+.story-setup__theme-custom-input::placeholder {
   color: var(--text-muted);
-  line-height: 1.4;
-}
-
-.story-setup__toggle--active {
-  border-color: var(--accent-gold);
-  background: rgba(201, 162, 39, 0.08);
-}
-
-.story-setup__toggle--rose.story-setup__toggle--active {
-  border-color: var(--accent-rose);
-  background: rgba(232, 160, 191, 0.08);
-}
-
-.story-setup__toggle-icon {
-  font-size: 1.25rem;
-}
-
-.story-setup__row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2rem;
 }
 
 .story-setup__pills {
@@ -210,7 +280,6 @@
 
 .story-setup__input {
   width: 100%;
-  max-width: 480px;
   padding: 0.85rem 1rem;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border-subtle);
@@ -219,47 +288,10 @@
   font-size: 1rem;
 }
 
-.story-setup__textarea {
-  width: 100%;
-  max-width: 480px;
-  margin-top: 0.75rem;
-  padding: 0.85rem 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  line-height: 1.65;
-  resize: vertical;
-}
-
 .story-setup__input:focus,
-.story-setup__textarea:focus {
+.story-setup__theme-custom-input:focus {
   outline: none;
   border-color: var(--accent-gold-dim);
-}
-
-.story-setup__preview {
-  margin-bottom: 0.5rem;
-  padding: 1rem 1.1rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-subtle);
-  border-radius: 6px;
-}
-
-.story-setup__preview-label {
-  margin: 0 0 0.45rem;
-  font-family: var(--font-ui);
-  font-size: 0.68rem;
-  letter-spacing: 0.14em;
-  color: var(--text-muted);
-}
-
-.story-setup__preview-text {
-  margin: 0;
-  font-size: 0.92rem;
-  line-height: 1.65;
-  color: var(--text-secondary);
 }
 
 .story-setup__footer {
@@ -287,9 +319,11 @@
 }
 
 @media (max-width: 640px) {
-  .story-setup__themes,
-  .story-setup__toggle-group,
-  .story-setup__row {
-    grid-template-columns: 1fr;
+  .story-setup {
+    padding: 2rem 1rem 3rem;
+  }
+
+  .story-setup__themes {
+    grid-auto-columns: minmax(132px, 148px);
   }
 }

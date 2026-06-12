@@ -4,6 +4,7 @@ import type {
   StoryBibleRegistry,
 } from '../data/story-bibles/story-bible.types';
 import type { StoryConfig, ThemeId } from '../types/story.types';
+import { deriveCustomStoryTitle } from '../constants/story-theme.const';
 import { resolveTheme } from './story-theme.util';
 
 const registry = biblesRegistry as StoryBibleRegistry;
@@ -21,10 +22,10 @@ export function getStoryBible(themeId: ThemeId): StoryBible | undefined {
 
 /** 自定义主题：由用户输入即时生成最小可行 Story Bible */
 export function buildCustomStoryBible(config: StoryConfig): StoryBible {
-  const themeMeta = resolveTheme(config);
-  const userTitle = config.customTheme?.title.trim() || themeMeta.title;
-  const userDesc =
-    config.customTheme?.description.trim() || themeMeta.description;
+  const userBrief =
+    config.customTheme?.description.trim() ||
+    resolveTheme(config).description;
+  const userTitle = deriveCustomStoryTitle(userBrief);
 
   return {
     id: 'custom',
@@ -38,15 +39,15 @@ export function buildCustomStoryBible(config: StoryConfig): StoryBible {
       referenceWorks: ['按用户描述展开，忌套用模板'],
     },
     presentation: {
-      description: userDesc,
+      description: userBrief.slice(0, 120),
       gradient: DEFAULT_CUSTOM_GRADIENT,
       imageUrl: DEFAULT_CUSTOM_IMAGE,
-      maleHook: userDesc.slice(0, 48),
-      femaleHook: userDesc.slice(0, 48),
+      maleHook: userBrief.slice(0, 80),
+      femaleHook: userBrief.slice(0, 80),
       sortOrder: 9999,
     },
-    logline: `「${userTitle}」：${userDesc.slice(0, 80)}`,
-    pitch: userDesc,
+    logline: userBrief.slice(0, 120),
+    pitch: userBrief,
     coreThemes: ['用户定义的核心矛盾须全程贯穿', '每个选择须有可见代价'],
     toneAndStyle: {
       narrativeVoice: '展示而非告知；对白有刀口，少形容词堆砌。',
@@ -58,7 +59,7 @@ export function buildCustomStoryBible(config: StoryConfig): StoryBible {
     },
     storyWorld: {
       era: '由用户描述推断，须具体可感',
-      setting: userDesc,
+      setting: userBrief,
       socialRules: ['设定一旦建立须自洽', '忌中途无理由改世界观'],
       keyLocations: ['开场须给出可拍的具体空间'],
     },
@@ -76,7 +77,7 @@ export function buildCustomStoryBible(config: StoryConfig): StoryBible {
         tactics: '施压、交易、信息差、舆论或制度',
       },
     ],
-    coreConflicts: [userDesc, '公开冲突与私密信息差可并用'],
+    coreConflicts: [userBrief, '公开冲突与私密信息差可并用'],
     informationGap: '至少保留一条观众/主角尚未完全知晓的秘密，逐回合揭露。',
     hookMechanics: {
       openingMustEstablish: [
@@ -161,7 +162,7 @@ ${bible.logline}
 参照气质：${bible.meta.referenceWorks.join('、')}
 
 ▎故事前提（Pitch）
-${bible.pitch}
+${bible.id === 'custom' ? '【用户原创设定 — 须严格遵循】\n' : ''}${bible.pitch}
 
 ▎核心主题
 ${formatList(bible.coreThemes)}

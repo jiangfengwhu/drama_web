@@ -4,8 +4,9 @@ import type {
   StoryBiblePresentation,
   StoryBibleRegistry,
 } from '../data/story-bibles/story-bible.types';
-import type { StoryConfig, ThemeId } from '../types/story.types';
+import type { AudienceType, StoryConfig, ThemeId } from '../types/story.types';
 import type { ThemeAudienceTag, ThemeMeta } from '../types/story-theme.types';
+import { deriveCustomStoryTitle } from '../constants/story-theme.const';
 
 const registry = biblesRegistry as StoryBibleRegistry;
 
@@ -84,17 +85,17 @@ export function resolveTheme(config: StoryConfig): ThemeMeta {
     return getThemeById(config.themeId);
   }
 
-  const title = config.customTheme?.title.trim() || CUSTOM_THEME_OPTION.title;
   const description =
     config.customTheme?.description.trim() || CUSTOM_THEME_OPTION.description;
+  const title = deriveCustomStoryTitle(description);
 
   return {
     ...CUSTOM_THEME_OPTION,
     title,
     description,
     subtitle: '自定义 · 专属剧情',
-    maleHook: description.slice(0, 48),
-    femaleHook: description.slice(0, 48),
+    maleHook: description.slice(0, 80),
+    femaleHook: description.slice(0, 80),
   };
 }
 
@@ -105,6 +106,16 @@ export function themesForAudience(
     (theme) =>
       theme.audienceTag === 'all' || theme.audienceTag === audience,
   );
+}
+
+/** 从所选题材推导受众（UI 不再单独选择，供 AI 写作层使用） */
+export function resolveAudienceForConfig(
+  config: Pick<StoryConfig, 'themeId'>,
+): AudienceType {
+  if (config.themeId === 'custom') return 'male';
+  const bible = registry.themes[config.themeId];
+  if (!bible) return 'male';
+  return bible.meta.audience === 'female' ? 'female' : 'male';
 }
 
 /** @deprecated 使用 listPresetThemes */
