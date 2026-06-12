@@ -7,7 +7,7 @@ interface RevealSession {
 
 /**
  * 气泡 reveal 队列：
- * - 完整行一到即入队（target 立刻增长）
+ * - target 增长后逐条 +1 展示，禁止一次性跳满
  * - 上一条 pop 动画结束后再展示下一条
  * - 本回合第一条新气泡零延迟弹出
  */
@@ -24,11 +24,6 @@ export function useBubbleRevealQueue<T>(
     ? [...committedItems, ...streamItems]
     : committedItems;
   const targetLength = allItems.length;
-
-  useEffect(() => {
-    if (isStreaming || sessionRef.current !== null) return;
-    setVisibleEndIndex(committedItems.length);
-  }, [committedItems.length, isStreaming]);
 
   useEffect(() => {
     if (!isStreaming || sessionRef.current !== null) return;

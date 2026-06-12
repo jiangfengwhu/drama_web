@@ -1,7 +1,6 @@
 .wechat-chat {
   --chat-padding-inline: 0;
   --chat-avatar-size: 40px;
-  --chat-avatar-max-width: 4.1rem;
   --chat-row-gap: 0.6rem;
   /* 气泡最大宽度按老规矩：预留对侧头像位，布局用固定 40px 计算 */
   --chat-opposite-lane: calc(var(--chat-avatar-size) + var(--chat-row-gap));
@@ -23,8 +22,14 @@
   padding: 0.2rem 0;
 }
 
+.wechat-chat__entry {
+  opacity: 1;
+  transform: none;
+}
+
 .wechat-chat__entry--pop {
   animation: chatBubblePop 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: transform, opacity;
 }
 
 @keyframes chatBubblePop {
@@ -70,28 +75,47 @@
 
 .wechat-chat__avatar {
   flex-shrink: 0;
+  box-sizing: border-box;
+  width: var(--chat-avatar-size);
   min-width: var(--chat-avatar-size);
-  max-width: var(--chat-avatar-max-width);
-  width: auto;
+  max-width: var(--chat-avatar-size);
   height: var(--chat-avatar-size);
-  padding: 0 0.28rem;
+  padding: 0;
   border-radius: 12px;
   background: var(--avatar-gradient);
   color: var(--avatar-text);
   font-family: var(--font-chat);
-  font-size: clamp(0.62rem, 2.6vw, 0.72rem);
   font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.1;
-  white-space: nowrap;
   overflow: hidden;
-  text-overflow: clip;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow:
     0 0 0 2px var(--avatar-ring),
     0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.wechat-chat__avatar-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.04rem;
+  width: 100%;
+  height: 100%;
+  padding: 0.18rem 0.12rem;
+  box-sizing: border-box;
+}
+
+.wechat-chat__avatar-line {
+  display: block;
+  width: 2em;
+  font-size: 0.68rem;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .wechat-chat__other-body,
@@ -123,19 +147,6 @@
 
 .wechat-chat__message-stack--self {
   align-items: flex-end;
-}
-
-/** 舞台提示：气泡上方，轻量副文本，不抢台词注意力 */
-.wechat-chat__stage-caption {
-  margin: 0;
-  padding: 0 0.4rem;
-  max-width: 100%;
-  font-size: 0.72rem;
-  line-height: 1.45;
-  font-style: italic;
-  letter-spacing: 0.02em;
-  color: var(--bubble-stage, rgba(255, 255, 255, 0.42));
-  opacity: 0.88;
 }
 
 .wechat-chat__bubble {

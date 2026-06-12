@@ -80,7 +80,8 @@ function npcCastHint(template: RichSceneTemplate, name: string): string {
 }
 
 function castEntryFor(template: RichSceneTemplate, name: string): string {
-  return `· ${name}：${npcCastHint(template, name)}`;
+  const hint = npcCastHint(template, name);
+  return `· ${name}：${hint}；暗线：与当前乱局利益绑死，话里有话`;
 }
 
 const GUIDE_CAST_PREFIX = 'GUIDE: CAST|';
@@ -108,33 +109,26 @@ function scriptLinesWithProgressiveCast(
       seen.add(sender);
       rows.push(`${GUIDE_CAST_PREFIX}${castEntryFor(template, sender)}`);
     }
-    const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
-    rows.push(`MSG: ${sender}|${action}${line.message ?? ''}`);
+    rows.push(`MSG: ${sender}|${line.message ?? ''}`);
   }
 
   return rows;
 }
 
-function artisticProtagonistLine(action: string): { stageDirection: string; dialogue: string } {
+function artisticProtagonistLine(action: string): string {
   const intent = action.trim().slice(0, 48);
   if (intent.length <= 12) {
-    return {
-      stageDirection: '目光一凛，嘴角微扬',
-      dialogue: `行，${intent}。`,
-    };
+    return `行，${intent}。`;
   }
-  return {
-    stageDirection: '沉吟片刻，抬眼',
-    dialogue: `明白了。${intent.slice(0, 36)}${intent.length > 36 ? '…' : ''}`,
-  };
+  return `明白了。${intent.slice(0, 36)}${intent.length > 36 ? '…' : ''}`;
 }
 
-import { DEFAULT_EMOTION_LINES } from '../constants/prompt-format.const';
+import { pickDefaultEmotionLines } from '../constants/prompt-format.const';
 
 function mockEmotionLines(config: StoryConfig, userTurnCount: number): string[] {
-  const base: string[] = [...DEFAULT_EMOTION_LINES[config.audience]];
+  const base = pickDefaultEmotionLines(config.audience);
   if (userTurnCount % 2 === 1) {
-    base[6] =
+    base[base.length - 1] =
       config.audience === 'male'
         ? '你们逼我的，那就别怪我不客气了。'
         : '既然你不仁，就别怪我不义了。';
@@ -146,7 +140,7 @@ export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
   const pool = getRichScenePool(config.themeId, config.audience);
   const template = personalizeTemplate(pool[0], config.protagonistName);
   const sceneText = templateSceneText(template);
-  const openingCards = [...DEFAULT_EMOTION_LINES[config.audience]];
+  const openingCards = pickDefaultEmotionLines(config.audience);
 
   const narrLine = {
     kind: 'narr' as const,
@@ -210,8 +204,7 @@ export function getMockNpcTurn(
     {
       kind: 'msg',
       sender: '你',
-      message: protagonistLine.dialogue,
-      stageDirection: protagonistLine.stageDirection,
+      message: protagonistLine,
     },
     {
       kind: 'narr',

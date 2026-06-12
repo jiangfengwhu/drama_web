@@ -12,10 +12,10 @@ export type GuideFieldKey = (typeof GUIDE_FIELD)[keyof typeof GUIDE_FIELD];
 
 export const GUIDE_LIMITS = {
   title: 24,
-  /** 前情提要：一两句话，快速入戏 */
-  prologue: 96,
-  /** 单人 CAST 条目上限 */
-  castPerEntry: 48,
+  /** 前情提要：一句入戏，禁止背景铺陈 */
+  prologue: 56,
+  /** 单人 CAST 条目上限（含暗线字段） */
+  castPerEntry: 72,
   /** @deprecated 开场不再批量输出 */
   cast: 280,
 } as const;

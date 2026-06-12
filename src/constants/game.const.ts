@@ -1,15 +1,13 @@
 import type { StoryLength } from '../types/story.types';
 
+/** Agnes 直连上游 */
 export const AGNES_API_BASE = 'https://apihub.agnes-ai.com';
 export const AGNES_API_ENDPOINT = `${AGNES_API_BASE}/v1/chat/completions`;
-
 export const AGNES_MODEL = 'agnes-2.0-flash';
 
-/** 开场/回合流式生成的 max_tokens 上限 */
-export const AI_COMPLETION_MAX_TOKENS = {
-  opening: 3600,
-  turn: 3200,
-} as const;
+/** OpenAI 兼容上游（生产经 /api/openai 同源代理转发） */
+export const OPENAI_UPSTREAM_BASE = 'https://llm.onallways.top';
+export const OPENAI_MODEL = 'gpt-5.4-mini';
 
 /** 回合 user prompt 中保留的最近剧本行数（控制上下文膨胀） */
 export const TURN_HISTORY_LINE_LIMIT = 36;

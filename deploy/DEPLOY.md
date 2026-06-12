@@ -5,8 +5,16 @@
 ```bash
 cd web
 
-# 启用 AI 剧本（可选；留空则演示 Mock 模式）
-echo 'VITE_AGNES_API_KEY=你的密钥' > .env.production
+# 启用 AI 剧本（二选一，通过 VITE_AI_PROVIDER 切换）
+cat > .env.production <<'EOF'
+VITE_AI_PROVIDER=openai
+VITE_OPENAI_API_KEY=你的OpenAI密钥
+VITE_OPENAI_MODEL=gpt-5.4-mini
+EOF
+
+# 或使用 Agnes：
+# VITE_AI_PROVIDER=agnes
+# VITE_AGNES_API_KEY=你的Agnes密钥
 
 npm ci
 npm run build
@@ -31,6 +39,12 @@ sudo systemctl reload nginx
 ```
 
 访问 http://drama.297782.xyz 验证。
+
+### LLM 代理（OpenAI 兼容）
+
+`VITE_AI_PROVIDER=openai` 时，前端请求同源 `/api/openai/v1/chat/completions`，由 Nginx 转发至 `https://llm.onallways.top`（上游无 CORS，必须走代理）。配置见 `deploy/nginx/drama.297782.xyz.conf` 中 `location /api/openai/`；更新后执行 `sudo nginx -t && sudo systemctl reload nginx`。
+
+`VITE_AI_PROVIDER=agnes` 时直连 `apihub.agnes-ai.com`，无需上述代理。
 
 **若 nginx 报 `redirection cycle` /index.html`**，按顺序排查：
 

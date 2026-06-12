@@ -1,5 +1,11 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
-import { getAvatarTheme } from '../../services/avatar-theme.util';
+import { useMemo } from 'react';
+import {
+  AvatarThemeRegistry,
+  buildCastThemeRegistry,
+  collectCastNamesInOrder,
+  type AvatarTheme,
+} from '../../services/avatar-theme.util';
+import { useTimelinePopAnimation } from '../../hooks/useTimelinePopAnimation';
 import type { RelationItem } from '../../services/story-brief.util';
 import { lookupCharacterProfile } from '../../services/story-brief.util';
 import type { StoryTimelineItem } from '../../types/story-timeline.types';
@@ -14,13 +20,11 @@ interface StoryTimelineProps {
   onProfileHover?: (profile: RelationItem | null) => void;
 }
 
-function bubbleThemeStyle(theme: ReturnType<typeof getAvatarTheme>): React.CSSProperties {
+function bubbleThemeStyle(theme: AvatarTheme): React.CSSProperties {
   return {
     '--bubble-bg': theme.bubbleBg,
     '--bubble-border': theme.bubbleBorder,
     '--bubble-dialogue': theme.bubbleDialogue,
-    '--bubble-stage': theme.bubbleStage,
-    '--bubble-stage-accent': theme.bubbleStageAccent,
     '--bubble-shadow': theme.bubbleShadow,
   } as React.CSSProperties;
 }
@@ -37,11 +41,13 @@ function ChatBubble({
   item,
   characterProfiles,
   protagonistName,
+  themeRegistry,
   onProfileHover,
 }: {
   item: StoryTimelineItem;
   characterProfiles: Map<string, RelationItem>;
   protagonistName: string;
+  themeRegistry: AvatarThemeRegistry;
   onProfileHover?: (profile: RelationItem | null) => void;
 }) {
   const isSelf = Boolean(item.isProtagonist);
@@ -53,7 +59,7 @@ function ChatBubble({
     protagonistName,
   );
   const displayName = profile?.name ?? senderName;
-  const theme = getAvatarTheme(displayName, isSelf);
+  const theme = themeRegistry.resolveTheme(displayName, isSelf);
   const bubbleStyle = bubbleThemeStyle(theme);
 
   const messageStack = (
@@ -63,9 +69,6 @@ function ChatBubble({
       }`}
       style={bubbleStyle}
     >
-      {item.stageDirection ? (
-        <p className="wechat-chat__stage-caption">{item.stageDirection}</p>
-      ) : null}
       <div
         className={`wechat-chat__bubble wechat-chat__bubble--${
           isSelf ? 'self' : 'other'
@@ -84,6 +87,7 @@ function ChatBubble({
           name={senderName}
           isProtagonist
           profile={profile}
+          theme={theme}
           align="right"
           onProfileHover={onProfileHover}
         />
@@ -96,6 +100,7 @@ function ChatBubble({
       <CharacterAvatar
         name={senderName}
         profile={profile}
+        theme={theme}
         align="left"
         onProfileHover={onProfileHover}
       />
@@ -109,12 +114,14 @@ function TimelineEntry({
   animate,
   characterProfiles,
   protagonistName,
+  themeRegistry,
   onProfileHover,
 }: {
   item: StoryTimelineItem;
   animate: boolean;
   characterProfiles: Map<string, RelationItem>;
   protagonistName: string;
+  themeRegistry: AvatarThemeRegistry;
   onProfileHover?: (profile: RelationItem | null) => void;
 }) {
   const className = animate
@@ -135,6 +142,7 @@ function TimelineEntry({
         item={item}
         characterProfiles={characterProfiles}
         protagonistName={protagonistName}
+        themeRegistry={themeRegistry}
         onProfileHover={onProfileHover}
       />
     </div>
@@ -147,15 +155,28 @@ export function StoryTimeline({
   protagonistName,
   onProfileHover,
 }: StoryTimelineProps) {
-  const seenIdsRef = useRef(new Set<string>());
+  const itemIds = useMemo(() => items.map((item) => item.id), [items]);
+  const shouldPop = useTimelinePopAnimation(itemIds);
 
-  useEffect(() => {
-    if (items.length === 0) seenIdsRef.current.clear();
-  }, [items.length]);
+  const themeRegistry = useMemo(() => {
+    const castNames: string[] = [];
 
-  useLayoutEffect(() => {
-    items.forEach((item) => seenIdsRef.current.add(item.id));
-  }, [items]);
+    for (const item of items) {
+      if (item.kind !== 'msg' || !item.sender) continue;
+      castNames.push(item.sender);
+    }
+
+    for (const name of characterProfiles.keys()) {
+      castNames.push(name);
+    }
+
+    castNames.push(protagonistName, '你');
+
+    return buildCastThemeRegistry(
+      protagonistName,
+      collectCastNamesInOrder(castNames, protagonistName),
+    );
+  }, [items, characterProfiles, protagonistName]);
 
   if (items.length === 0) return null;
 
@@ -165,9 +186,10 @@ export function StoryTimeline({
         <TimelineEntry
           key={item.id}
           item={item}
-          animate={!seenIdsRef.current.has(item.id)}
+          animate={shouldPop(item.id)}
           characterProfiles={characterProfiles}
           protagonistName={protagonistName}
+          themeRegistry={themeRegistry}
           onProfileHover={onProfileHover}
         />
       ))}

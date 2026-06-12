@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { usePrefersFinePointer } from '../../hooks/usePrefersFinePointer';
-import { getAvatarTheme } from '../../services/avatar-theme.util';
+import { getAvatarTheme, type AvatarTheme } from '../../services/avatar-theme.util';
 import type { RelationItem } from '../../services/story-brief.util';
 import './CharacterAvatar.css';
 
@@ -8,6 +8,7 @@ interface CharacterAvatarProps {
   name?: string;
   isProtagonist?: boolean;
   profile?: RelationItem | null;
+  theme?: AvatarTheme;
   align?: 'left' | 'right';
   /** PC 双栏：hover 时把人物信息交给左侧面板，不显示浮层 */
   onProfileHover?: (profile: RelationItem | null) => void;
@@ -17,12 +18,13 @@ export function CharacterAvatar({
   name,
   isProtagonist = false,
   profile,
+  theme,
   align = 'left',
   onProfileHover,
 }: CharacterAvatarProps) {
   const prefersFinePointer = usePrefersFinePointer();
   const displayName = profile?.name ?? name ?? '未知';
-  const theme = getAvatarTheme(displayName, isProtagonist);
+  const resolvedTheme = theme ?? getAvatarTheme(displayName, isProtagonist);
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -92,13 +94,19 @@ export function CharacterAvatar({
           className="character-avatar__face wechat-chat__avatar"
           style={
             {
-              '--avatar-gradient': theme.gradient,
-              '--avatar-ring': theme.ring,
-              '--avatar-text': theme.textColor,
+              '--avatar-gradient': resolvedTheme.gradient,
+              '--avatar-ring': resolvedTheme.ring,
+              '--avatar-text': resolvedTheme.textColor,
             } as React.CSSProperties
           }
         >
-          {theme.label}
+          <span className="wechat-chat__avatar-text" aria-hidden>
+            {resolvedTheme.labelLines.map((line, index) => (
+              <span key={index} className="wechat-chat__avatar-line">
+                {line}
+              </span>
+            ))}
+          </span>
         </span>
       </button>
 

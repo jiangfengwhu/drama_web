@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import logoUrl from '../../assets/logo.jpg';
 import { APP_NAME } from '../../constants/app-brand.const';
-import { isAgnesConfigured } from '../../services/agnes-ai.service';
+import { getAiProviderLabel, isAiConfigured } from '../../services/ai-chat.service';
 import './Layout.css';
 
 interface LayoutProps {
@@ -11,7 +11,7 @@ interface LayoutProps {
 }
 
 export function Layout({ children, tickets, showNav = true }: LayoutProps) {
-  const modeLabel = isAgnesConfigured() ? '流式剧本' : 'Mock 演示';
+  const modeLabel = isAiConfigured() ? getAiProviderLabel() : 'Mock 演示';
 
   return (
     <div className="layout">
@@ -29,7 +29,7 @@ export function Layout({ children, tickets, showNav = true }: LayoutProps) {
             <span className="layout__logo-text">{APP_NAME}</span>
           </Link>
           <div className="layout__header-right">
-            <span className={`layout__ai-badge ${isAgnesConfigured() ? 'layout__ai-badge--live' : ''}`}>
+            <span className={`layout__ai-badge ${isAiConfigured() ? 'layout__ai-badge--live' : ''}`}>
               {modeLabel}
             </span>
             {tickets !== undefined && (

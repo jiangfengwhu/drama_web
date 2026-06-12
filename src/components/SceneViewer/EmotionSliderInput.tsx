@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import {
-  EMOTION_SLIDER_EMOJIS,
+  getEmotionSliderEmojis,
   EMOTION_SLIDER_SEND_LABEL,
   EMOTION_SLIDER_TITLE,
   FREE_FORM_MODE_LABEL,
@@ -28,13 +28,18 @@ export function EmotionSliderInput({
   const [sliderValue, setSliderValue] = useState(50);
   const previewRef = useRef<HTMLDivElement>(null);
 
+  const sliderEmojis = useMemo(
+    () => getEmotionSliderEmojis(lines.length),
+    [lines.length],
+  );
+
   const activeIndex = useMemo(
     () => indexFromSliderValue(sliderValue, lines.length),
     [sliderValue, lines.length],
   );
 
   const activeLine = lines[activeIndex] ?? '';
-  const activeEmoji = EMOTION_SLIDER_EMOJIS[activeIndex] ?? EMOTION_SLIDER_EMOJIS[0];
+  const activeEmoji = sliderEmojis[activeIndex] ?? sliderEmojis[0];
 
   const handleSubmit = useCallback(() => {
     if (!activeLine.trim() || disabled) return;

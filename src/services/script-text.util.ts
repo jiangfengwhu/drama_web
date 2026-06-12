@@ -1,4 +1,7 @@
-import { EMOTION_SLIDER_OPTION_COUNT } from '../constants/interaction.const';
+import {
+  ATTITUDE_CARD_COUNT_MAX,
+  ATTITUDE_CARD_COUNT_MIN,
+} from '../constants/interaction.const';
 import { TURN_HISTORY_LINE_LIMIT } from '../constants/game.const';
 import {
   SCRIPT_FIELD_SEP,
@@ -135,30 +138,31 @@ export function parseCardLine(raw: string): string | null {
   return match?.[1]?.trim() || null;
 }
 
-/** 从 MSG 正文拆出括号内微动作/神态与台词 */
-export function parseMsgStageDirection(message: string): {
-  stageDirection?: string;
-  dialogue: string;
-} {
+/** 剥离旧协议遗留的括号旁白，统一为纯台词展示 */
+function normalizeMsgDialogue(message: string): string {
   const trimmed = message.trim();
-  const match = trimmed.match(/^[（(]([^）)]*)[）)]\s*(.+)$/s);
-  if (match?.[2]?.trim()) {
-    return {
-      stageDirection: match[1].trim(),
-      dialogue: match[2].trim(),
-    };
-  }
-  return { dialogue: trimmed };
+  const legacy = trimmed.match(/^[（(]([^）)]*)[）)]\s*(.*)$/s);
+  if (!legacy) return trimmed;
+  const dialogue = legacy[2]?.trim() ?? '';
+  if (dialogue) return dialogue;
+  return legacy[1]?.trim() ?? trimmed;
 }
 
 export function normalizeAttitudeCards(
   cards: string[] | undefined,
   _audience: 'male' | 'female' = 'male',
 ): string[] {
-  return [...new Set(cards?.map((c) => c.trim()).filter(Boolean) ?? [])].slice(
-    0,
-    EMOTION_SLIDER_OPTION_COUNT,
-  );
+  const unique = [...new Set(cards?.map((c) => c.trim()).filter(Boolean) ?? [])];
+  if (unique.length <= ATTITUDE_CARD_COUNT_MAX) return unique;
+
+  return Array.from({ length: ATTITUDE_CARD_COUNT_MAX }, (_, i) => {
+    const idx = Math.round((i / (ATTITUDE_CARD_COUNT_MAX - 1)) * (unique.length - 1));
+    return unique[idx];
+  });
+}
+
+export function isAttitudeCardCountValid(count: number): boolean {
+  return count >= ATTITUDE_CARD_COUNT_MIN && count <= ATTITUDE_CARD_COUNT_MAX;
 }
 
 /** 从 MOOD 与 COMPLETE 之间兜底提取 CARD（须先出现 CARD: 行，后续裸行才可续行） */
@@ -214,12 +218,10 @@ function isMetaLine(trimmed: string): boolean {
 }
 
 function buildMsgLine(sender: string, message: string): ScriptLine {
-  const { stageDirection, dialogue } = parseMsgStageDirection(message);
   return {
     kind: 'msg',
     sender,
-    message: dialogue,
-    stageDirection,
+    message: normalizeMsgDialogue(message),
   };
 }
 
@@ -324,14 +326,10 @@ export function parsePartialTailScriptLine(tail: string): ScriptLine | null {
   if (tag === 'MSG') {
     const partial = parsePartialMsgFields(normalized.slice('MSG:'.length));
     if (!partial?.sender) return partial;
-    const { stageDirection, dialogue } = parseMsgStageDirection(
-      partial.message ?? '',
-    );
     return {
       kind: 'msg',
       sender: partial.sender,
-      message: dialogue,
-      stageDirection,
+      message: normalizeMsgDialogue(partial.message ?? ''),
     };
   }
 
@@ -512,8 +510,7 @@ export function serializeScriptLines(lines: ScriptLine[]): string {
     .map((line) => {
       if (line.kind === 'scene') return `${SCRIPT_LINE.SCENE} ${line.text ?? ''}`;
       if (line.kind === 'narr') return `${SCRIPT_LINE.NARR} ${line.text ?? ''}`;
-      const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
-      return `${SCRIPT_LINE.MSG} ${line.sender}${SCRIPT_FIELD_SEP}${action}${line.message ?? ''}`;
+      return `${SCRIPT_LINE.MSG} ${line.sender}${SCRIPT_FIELD_SEP}${line.message ?? ''}`;
     })
     .join('\n');
 }
@@ -550,7 +547,6 @@ export function scriptLinesToTimeline(
         kind: 'msg' as const,
         sender: isProtagonist ? protagonistName : (line.sender ?? '未知'),
         text: line.message ?? '',
-        stageDirection: line.stageDirection,
         isProtagonist,
       };
     })
@@ -652,8 +648,7 @@ export function formatChatHistory(
       const sender = isProtagonistSender(line.sender ?? '', protagonistName)
         ? '你'
         : line.sender;
-      const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
-      return `${sender}: ${action}${line.message ?? ''}`;
+      return `${sender}: ${line.message ?? ''}`;
     })
     .join('\n');
 }
@@ -679,8 +674,41 @@ export function formatRecentChatHistory(
 }
 
 function formatMsgLine(line: ScriptLine): string {
-  const action = line.stageDirection ? `(${line.stageDirection}) ` : '';
-  return `${action}${line.message ?? ''}`.trim();
+  return (line.message ?? '').trim();
+}
+
+/** 近 2 轮是否仅原地对峙、无 NARR/局面变化 — 触发第三力量强制打断 */
+export function detectConfrontationStagnation(
+  scriptLines: ScriptLine[],
+  protagonistName: string,
+): boolean {
+  const msgs = scriptLines.filter((line) => line.kind === 'msg');
+  const protagonistTurnStarts: number[] = [];
+  msgs.forEach((line, index) => {
+    if (isProtagonistSender(line.sender ?? '', protagonistName)) {
+      protagonistTurnStarts.push(index);
+    }
+  });
+  if (protagonistTurnStarts.length < 2) return false;
+
+  const stallFromIdx = protagonistTurnStarts[protagonistTurnStarts.length - 2];
+  const stallMsgs = msgs.slice(stallFromIdx);
+  const npcSpeakers = new Set(
+    stallMsgs
+      .filter((line) => !isProtagonistSender(line.sender ?? '', protagonistName))
+      .map((line) => line.sender?.trim())
+      .filter(Boolean),
+  );
+  if (npcSpeakers.size > 2) return false;
+
+  const anchorLine = msgs[stallFromIdx];
+  const anchorIndex = scriptLines.indexOf(anchorLine);
+  if (anchorIndex < 0) return false;
+
+  const hasPlotAdvance = scriptLines
+    .slice(anchorIndex)
+    .some((line) => line.kind === 'narr' || line.kind === 'scene');
+  return !hasPlotAdvance;
 }
 
 /** 回合 user prompt：接戏锚点，防止 NPC 幻词反问、各说各话 */
@@ -698,6 +726,10 @@ export function buildTurnContinuityPrompt(
     : '';
 
   const intent = userAction.trim();
+  const stagnation = detectConfrontationStagnation(scriptLines, protagonistName);
+  const thirdForceRule = stagnation
+    ? `⑤ 【强制】近 2 轮对峙无变局：本回合须先写 1 行 NARR 引入外部打断（闯入/来电/警报/物件落地/倒计时），再写 MSG:你|，禁止继续原地对骂。`
+    : '⑤ NARR 仅在有外部打断或关键新画面时写 1 行；无则省略。';
   const recentBlock =
     recentMsgs.length > 0
       ? recentMsgs
@@ -710,18 +742,24 @@ export function buildTurnContinuityPrompt(
           .join('\n')
       : '（尚无对白）';
 
-  return `【本回合接戏锚点 — 违反则整回合作废重写】
-用户选中主角意图：「${intent}」
+  return `【本回合接戏锚点 — 违反则重写】
+用户选中主角意图（态度滑块）：「${intent}」
 ${lastProtagonistLine ? `主角上一轮：「${lastProtagonistLine}」` : ''}
+${stagnation ? '⚠ 检测到对峙僵持：本回合必须破局，禁止循环争吵。' : ''}
+
+【反停滞三大铁律 — 本回合全部兑现】
+1. 情绪行为化：MSG:你| 纯台词须让局面偏移（承诺、威胁、揭底、点名物件/时限），禁止纯放狠话与括号旁白。
+2. NPC 泄密：首条或次条 NPC 须泄露具体秘密、抛恶毒交易或暴露软肋，禁止只对骂防御。
+3. 第三方打断：${stagnation ? '已僵持，NARR 强制写 1 行外部变量打断。' : '若对白将陷入复读，用 NARR 引入局外变量。'}
 
 执行顺序：
-① 写 MSG:你|… 艺术化上述意图，保留核心名词/动作/立场，勿改义。
-② 首条 NPC 须接「你」本句——回声、反驳、回避均可，须命中本句至少一处用词或动作。
-③ 第 2 条及之后：至少 1 条须接前一位 NPC（或当面与另一 NPC 交锋/帮腔/拆台），形成群戏；禁止所有 NPC 逐句只对主角喊话。
-④ 禁止幻词反问：不得用「XX？」起句，除非 XX 已出现在本句意图或下方近期对白中。
-⑤ 每回合新筹码/秘密至多 1 条。
+① ${stagnation ? 'NARR: 外部打断（1 行）→ ' : ''}MSG:你|… 艺术化上述意图为纯台词，保留核心名词/物件/立场，让玩家从话里脑补动作。
+② 首条 NPC 当场接「你」——局势立刻偏移，须含信息增量（秘密/交易/软肋）。
+③ ≥1 条 NPC↔NPC 交锋；最后一条 MSG 须制造下一档 CARD 钩子（新筹码/新危险）。
+④ 禁止幻词反问；禁止「你等着」「别逼我」式空转；同回合不重复同一施压角度。
+${thirdForceRule}
 
-近期对白（接词不得与之矛盾）：
+近期对白（接词不得矛盾，禁止复读）：
 ${recentBlock}`;
 }
 

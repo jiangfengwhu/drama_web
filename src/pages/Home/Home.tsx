@@ -7,11 +7,11 @@ import {
   HOME_HERO,
   HOME_WHISPERS,
 } from '../../constants/home-copy.const';
-import { isAgnesConfigured } from '../../services/agnes-ai.service';
+import { isAiConfigured } from '../../services/ai-chat.service';
 import './Home.css';
 
 export function HomePage() {
-  const aiReady = isAgnesConfigured();
+  const aiReady = isAiConfigured();
 
   return (
     <Layout showNav={false}>

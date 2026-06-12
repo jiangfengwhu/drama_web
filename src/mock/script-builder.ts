@@ -18,7 +18,6 @@ function pushNpcMsg(
   sender: string,
   message: string,
   protagonistName: string,
-  stageDirection?: string,
 ): void {
   if (isProtagonistSpeaker(sender, protagonistName)) return;
   const text = shorten(message, 96);
@@ -27,7 +26,6 @@ function pushNpcMsg(
       kind: 'msg',
       sender,
       message: text,
-      stageDirection: stageDirection ? shorten(stageDirection, 24) : undefined,
     });
   }
 }
@@ -44,7 +42,7 @@ export function templateToNpcScript(
   const lines: ScriptLine[] = [];
 
   for (const dlg of template.dialogues.slice(0, 5)) {
-    pushNpcMsg(lines, dlg.speaker, dlg.text, protagonistName, dlg.tone);
+    pushNpcMsg(lines, dlg.speaker, dlg.text, protagonistName);
   }
 
   for (const beat of template.beats.slice(0, 2)) {

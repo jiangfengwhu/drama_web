@@ -1,4 +1,12 @@
 import type { AudienceType, StoryConfig, ThemeId } from '../types/story.types';
+import { buildAntiPredictabilityBlock } from './prompt-anti-predictability.const';
+import { ANTI_STAGNATION_BLOCK } from './prompt-advancement.const';
+import {
+  ENGAGEMENT_FIRST_PRINCIPLES_BLOCK,
+  OPENING_HOOK_BLOCK,
+  TURN_PAYOFF_BLOCK,
+  buildAudienceEngagementOverlay,
+} from './prompt-engagement.const';
 import { resolveTheme } from './themes';
 
 /** 网文廉价感高频词 — 出现即降格，须主动回避 */
@@ -39,16 +47,14 @@ export const BANNED_CHEAP_PHRASES = [
   '嘴角勾起',
 ] as const;
 
-const UNIVERSAL_CRAFT_BLOCK = `【好文共通法则 — 互动短剧亦适用】
-1. 展示而非告知：用具体物件、职业细节、微动作传达地位与情绪，禁止形容词堆砌（「绝美」「尊贵」「恐怖如斯」）。
-2. 对白有潜台词：人物很少把真实动机说满；冲突藏在停顿、称谓变化、话题转移里。
-3. 每人一种声口：老者惜字、商人绕弯、少年逞强、母亲打岔——同一场戏里说话方式须可辨。
-4. 冲突是两难：让主角在「体面/利益/情感/道义」间取舍，而非简单的善恶对峙。
-5. 节制即高级：越激烈的场面，台词越短、越冷；暴怒少用感叹号连用，羞辱不用粗鄙堆砌。
-6. 命名与场景要落地：人物用常见但好记的中文名；场景写可感的空间（材质、光线、距离），忌空泛「豪门」「顶级」。
-7. CARD 台词亦须入戏：七档情绪是同一人物在同一情境下的七种自持/失控方式，不是网文金句摘抄。
-8. 接戏先于爽点：NPC 须先回应上一句（主角或另一位 NPC），再推进；禁止「幻词」——前文与当前句均未出现的词（如「尊严」「面子」「骨气」），NPC 不得突然拿来反问或嘲讽。
-9. 群戏有三角：场上人物彼此有立场与旧怨，不是排队对主角独白；须出现 NPC↔NPC 的交锋、帮腔、拆台或默契配合。`;
+const UNIVERSAL_CRAFT_BLOCK = `【文学底线 — 快而不俗】
+1. 展示而非告知：用对白里的物件、称谓、承诺变化呈现地位与情绪，禁止形容词堆砌与括号旁白。
+2. 对白有刀口：短句、潜台词、每人一种声口；动作神态让玩家从台词自行脑补，不靠 stageDirection。
+3. 冲突是两难：体面/利益/情感/道义，让用户选 CARD 时有真实代价感。
+4. 命名与场景落地：人名好记、空间可感；忌空泛「豪门」「顶级」。
+5. CARD 须入戏：3–5 档是同一抉择点的不同出口，不是金句摘抄。
+6. 接戏不墨迹：NPC 先接上一句再推进；禁止幻词反问；群戏须有 NPC↔NPC。
+7. 快 ≠ 廉价：禁止咆哮羞辱、围观震惊、系统体、霸总宣告体（见禁用表）。`;
 
 interface ThemeCraftProfile {
   anchors: string;
@@ -181,14 +187,7 @@ const CUSTOM_CRAFT: ThemeCraftProfile = {
 };
 
 function audienceCraftOverlay(audience: AudienceType): string {
-  if (audience === 'male') {
-    return `【受众倾向 · 男频（高级表达）】
-核心爽点来自：信息差、布局落子、尊严在规则内赢回——不是音量与侮辱。
-主角宜冷静、有分寸；反派宜聪明、有身份逻辑；胜利宜留后手、有代价。`;
-  }
-  return `【受众倾向 · 女频（高级表达）】
-核心爽点来自：情感边界、自我价值、关系里的选择与拒绝——不是哭闹与撕扯。
-重视「未说出口的话」；亲密与伤害都宜克制；HE/BE 皆须情感逻辑自洽。`;
+  return buildAudienceEngagementOverlay(audience);
 }
 
 function resolveCraftProfile(themeId: ThemeId): ThemeCraftProfile {
@@ -197,6 +196,7 @@ function resolveCraftProfile(themeId: ThemeId): ThemeCraftProfile {
 }
 
 export function buildBannedPhrasesBlock(): string {
+  return "";
   return `【禁用廉价表达 — 命中即重写】
 ${BANNED_CHEAP_PHRASES.map((p) => `· ${p}`).join('\n')}
 以及同类网文模板句（咆哮羞辱、围观震惊、系统提示体、霸总宣告体、未接上文的概念反问如「尊严？」「面子？」）。`;
@@ -204,19 +204,19 @@ ${BANNED_CHEAP_PHRASES.map((p) => `· ${p}`).join('\n')}
 
 /** 注入 system / turn prompt：对话因果与接词 */
 export const DIALOGUE_CONTINUITY_BLOCK = `【对话连贯铁律 — 每回合 NPC 必守】
-1. 先接后推：每条 NPC 台词须接「上一句」——可以是主角，也可以是另一位 NPC（回声、反驳、插话、帮腔、拆台均可）。
-2. 禁幻词反问：NPC 不得用「XX？」起句或嘲讽，除非 XX 已在（a）主角本回合台词、（b）上一轮主角台词、（c）本回合已写 NARR/MSG 中出现。
-3. 群戏非审讯：禁止所有 NPC 逐句只对主角喊话（句句以「你」为对象）。每回合至少 1 条 MSG 须是 NPC 对 NPC（台词里出现对方姓名/称谓，如「林小姐」「周律」，或明确接上一 NPC 的话）。
-4. 多人因果链：2 条以上 NPC 时，后句须接前句人物或立场，形成三角/多边交锋；禁止三人各抛一句只对人主角的罐头台词。
-5. 每回合信息增量 ≤1：至多引入一个新筹码/秘密/威胁，其余对白用来消化、施压、内讧或动摇。
-6. 写 NPC 前自检：是否有人在对另一 NPC 说话？是否至少一条 NPC↔NPC？首条接主角后，第二条是否接前 NPC 或当面拆台？任一项否 → 重写 MSG 段。`;
+1. 先接后推：每条 NPC 须接上一句（主角或 NPC）；接完立刻推进局势，禁止同义复读。
+2. 禁幻词反问：不得用「XX？」起句，除非 XX 已在本回合或上一轮对白/NARR 中出现。
+3. 群戏非审讯：至少 1 条 MSG 为 NPC↔NPC；禁止人人只对主角喊话。
+4. 多人因果链：2 名以上 NPC 时，后句接前句人物或立场，形成交锋；禁止罐头独白。
+5. 每回合一个主钩子：至多 1 个新筹码/秘密/威胁，其余对白用于当场施压、拆台、让利或翻脸——不要信息堆砌。
+6. 写前自检：首条 NPC 是否接了主角？是否有 NPC↔NPC？最后一条是否让人想选 CARD？`;
 
 /** 开场群戏 — 主角尚未开口时的 NPC 调度 */
 export const OPENING_ENSEMBLE_BLOCK = `【开场群戏 — 主角未发言前】
 1. 开场 MSG 全部写 NPC，禁止「你」或主角名。
-2. 至少 2 名 NPC 须出场对白；其中不少于 1 条须是 NPC 互相对话（争锋、配合、传话、压制、拆台皆可），不是人人只等主角表态。
-3. 推荐节奏：NPC A 对 NPC B 或场面发难 → NPC B 接招/或 NPC C 插话 → 再有一人把压力引向主角（此时才出现「你」相关暗示，仍不写主角 MSG）。
-4. 开场结束时，主角应感到「被卷入一场已在进行的博弈」，而非「排队听训话」。`;
+2. 至少 2 名 NPC 对白，其中 ≥1 条 NPC↔NPC；前 2 条内须把核心冲突亮出来。
+3. 推荐节奏：A 与 B 当场交锋 → C 插话或把矛头引向主角 → 压力到位，停。
+4. 主角应感到「被扔进一场已经在烧的局」，不是排队听训话。`;
 
 export function buildCraftPromptBlock(
   config: StoryConfig,
@@ -225,7 +225,13 @@ export function buildCraftPromptBlock(
   const theme = resolveTheme(config);
   const profile = resolveCraftProfile(config.themeId);
 
-  return `${UNIVERSAL_CRAFT_BLOCK}
+  return `${ENGAGEMENT_FIRST_PRINCIPLES_BLOCK}
+${isOpening ? `\n${OPENING_HOOK_BLOCK}\n` : `\n${TURN_PAYOFF_BLOCK}\n`}
+
+${buildAntiPredictabilityBlock(isOpening)}
+${isOpening ? '' : `\n${ANTI_STAGNATION_BLOCK}\n`}
+
+${UNIVERSAL_CRAFT_BLOCK}
 
 ${DIALOGUE_CONTINUITY_BLOCK}
 ${isOpening ? `\n${OPENING_ENSEMBLE_BLOCK}\n` : ''}

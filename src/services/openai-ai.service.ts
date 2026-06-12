@@ -1,18 +1,14 @@
-import {
-  AGNES_API_ENDPOINT,
-  AGNES_MODEL,
-} from '../constants/game.const';
+import { OPENAI_MODEL } from '../constants/game.const';
 import type { ChatMessage } from '../types/story.types';
 
-export interface AgnesChatOptions {
+export interface OpenAiChatOptions {
   messages: ChatMessage[];
   temperature?: number;
   maxTokens?: number;
   stream?: boolean;
-  enableThinking?: boolean;
 }
 
-export interface AgnesChatResponse {
+export interface OpenAiChatResponse {
   content: string;
   usage?: {
     prompt_tokens: number;
@@ -21,22 +17,36 @@ export interface AgnesChatResponse {
   };
 }
 
+const OPENAI_PROXY_BASE = '/api/openai';
+
 function getApiKey(): string {
-  return import.meta.env.VITE_AGNES_API_KEY?.trim() ?? '';
+  return import.meta.env.VITE_OPENAI_API_KEY?.trim() ?? '';
 }
 
-export function isAgnesConfigured(): boolean {
+function getApiEndpoint(): string {
+  const base = (import.meta.env.VITE_OPENAI_API_BASE?.trim() || OPENAI_PROXY_BASE).replace(
+    /\/$/,
+    '',
+  );
+  return `${base}/v1/chat/completions`;
+}
+
+function getModel(): string {
+  return import.meta.env.VITE_OPENAI_MODEL?.trim() || OPENAI_MODEL;
+}
+
+export function isOpenAiConfigured(): boolean {
   return getApiKey().length > 0;
 }
 
 const DEFAULT_CHAT_TEMPERATURE = 1;
 
 function buildChatRequestBody(
-  options: AgnesChatOptions,
+  options: OpenAiChatOptions,
   stream: boolean,
 ): Record<string, unknown> {
   const body: Record<string, unknown> = {
-    model: AGNES_MODEL,
+    model: getModel(),
     messages: options.messages,
     temperature: options.temperature ?? DEFAULT_CHAT_TEMPERATURE,
     stream,
@@ -44,10 +54,6 @@ function buildChatRequestBody(
 
   if (options.maxTokens !== undefined) {
     body.max_tokens = options.maxTokens;
-  }
-
-  if (options.enableThinking) {
-    body.chat_template_kwargs = { enable_thinking: true };
   }
 
   return body;
@@ -77,27 +83,25 @@ function drainSseLines(buffer: string): { tokens: string[]; remainder: string } 
 }
 
 export async function chatCompletion(
-  options: AgnesChatOptions,
-): Promise<AgnesChatResponse> {
+  options: OpenAiChatOptions,
+): Promise<OpenAiChatResponse> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error('AGNES_API_KEY_NOT_CONFIGURED');
+    throw new Error('OPENAI_API_KEY_NOT_CONFIGURED');
   }
 
-  const body = buildChatRequestBody(options, false);
-
-  const response = await fetch(AGNES_API_ENDPOINT, {
+  const response = await fetch(getApiEndpoint(), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(body),
+    body: JSON.stringify(buildChatRequestBody(options, false)),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Agnes API error ${response.status}: ${errorText}`);
+    throw new Error(`OpenAI API error ${response.status}: ${errorText}`);
   }
 
   const data = await response.json();
@@ -110,14 +114,14 @@ export async function chatCompletion(
 }
 
 export async function* chatCompletionStream(
-  options: AgnesChatOptions,
+  options: OpenAiChatOptions,
 ): AsyncGenerator<string> {
   const apiKey = getApiKey();
   if (!apiKey) {
-    throw new Error('AGNES_API_KEY_NOT_CONFIGURED');
+    throw new Error('OPENAI_API_KEY_NOT_CONFIGURED');
   }
 
-  const response = await fetch(AGNES_API_ENDPOINT, {
+  const response = await fetch(getApiEndpoint(), {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -128,7 +132,7 @@ export async function* chatCompletionStream(
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`Agnes API stream error ${response.status}: ${errorText}`);
+    throw new Error(`OpenAI API stream error ${response.status}: ${errorText}`);
   }
 
   const reader = response.body?.getReader();

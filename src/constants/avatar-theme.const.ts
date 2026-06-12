@@ -1,5 +1,8 @@
-/** 头像内显示的名字最大字数 */
-export const AVATAR_NAME_MAX_LEN = 4;
+/** 头像内每行最多字数、最多行数（合计最多四字） */
+export const AVATAR_NAME_LINE_CHARS = 2;
+export const AVATAR_NAME_MAX_LINES = 2;
+export const AVATAR_NAME_MAX_LEN =
+  AVATAR_NAME_LINE_CHARS * AVATAR_NAME_MAX_LINES;
 
 export const AVATAR_PALETTES = [
   {
@@ -97,6 +100,54 @@ export const AVATAR_PALETTES = [
     bubbleStage: '#ffb8c4',
     bubbleStageAccent: 'rgba(190, 220, 255, 0.78)',
     bubbleShadow: 'rgba(192, 77, 98, 0.32)',
+  },
+  {
+    from: '#94a3b8',
+    to: '#64748b',
+    ring: 'rgba(148, 163, 184, 0.52)',
+    bubbleFrom: '#3d4a5c',
+    bubbleTo: '#2f3948',
+    bubbleBorder: 'rgba(180, 195, 215, 0.38)',
+    bubbleDialogue: '#f8fafc',
+    bubbleStage: '#cbd5e1',
+    bubbleStageAccent: 'rgba(255, 220, 160, 0.82)',
+    bubbleShadow: 'rgba(71, 85, 105, 0.32)',
+  },
+  {
+    from: '#2dd4bf',
+    to: '#0f766e',
+    ring: 'rgba(45, 212, 191, 0.5)',
+    bubbleFrom: '#115e59',
+    bubbleTo: '#0c4a46',
+    bubbleBorder: 'rgba(94, 234, 212, 0.38)',
+    bubbleDialogue: '#f0fdfa',
+    bubbleStage: '#99f6e4',
+    bubbleStageAccent: 'rgba(255, 210, 150, 0.82)',
+    bubbleShadow: 'rgba(15, 118, 110, 0.32)',
+  },
+  {
+    from: '#a78bfa',
+    to: '#6d28d9',
+    ring: 'rgba(167, 139, 250, 0.52)',
+    bubbleFrom: '#4c1d95',
+    bubbleTo: '#3b1578',
+    bubbleBorder: 'rgba(196, 181, 253, 0.4)',
+    bubbleDialogue: '#faf5ff',
+    bubbleStage: '#ddd6fe',
+    bubbleStageAccent: 'rgba(255, 200, 180, 0.8)',
+    bubbleShadow: 'rgba(109, 40, 217, 0.32)',
+  },
+  {
+    from: '#fb7185',
+    to: '#be123c',
+    ring: 'rgba(251, 113, 133, 0.5)',
+    bubbleFrom: '#9f1239',
+    bubbleTo: '#7f0d32',
+    bubbleBorder: 'rgba(253, 164, 175, 0.4)',
+    bubbleDialogue: '#fff1f2',
+    bubbleStage: '#fecdd3',
+    bubbleStageAccent: 'rgba(190, 220, 255, 0.78)',
+    bubbleShadow: 'rgba(190, 18, 60, 0.32)',
   },
 ] as const;
 

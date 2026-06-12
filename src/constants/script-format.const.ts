@@ -14,13 +14,13 @@ export const SCRIPT_LINE_META = {
 } as const;
 
 export const SCRIPT_LIMITS = {
-  maxSceneChars: 48,
-  maxNarrChars: 120,
-  maxMsgChars: 96,
-  openingMinMsg: 4,
-  openingMaxMsg: 8,
-  openingMaxNarr: 2,
+  maxSceneChars: 40,
+  maxNarrChars: 72,
+  maxMsgChars: 80,
+  openingMinMsg: 3,
+  openingMaxMsg: 5,
+  openingMaxNarr: 1,
   turnMinMsg: 3,
-  turnMaxMsg: 6,
-  turnMaxNarr: 2,
+  turnMaxMsg: 5,
+  turnMaxNarr: 1,
 } as const;
