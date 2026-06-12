@@ -1,0 +1,36 @@
+.conv-thread-avatar {
+  --chat-avatar-size: 2.25rem;
+  flex-shrink: 0;
+}
+
+.conv-thread-avatar--character.wechat-chat__avatar {
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 1.5px var(--avatar-ring),
+    0 3px 10px rgba(0, 0, 0, 0.28);
+}
+
+.conv-thread-avatar--character .wechat-chat__avatar-line {
+  font-size: 0.62rem;
+}
+
+.conv-thread-avatar--scene {
+  display: grid;
+  place-items: center;
+  width: var(--chat-avatar-size);
+  height: var(--chat-avatar-size);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(212, 175, 106, 0.16) 0%, transparent 55%),
+    linear-gradient(145deg, rgba(34, 28, 40, 1) 0%, rgba(16, 14, 22, 1) 100%);
+  box-shadow:
+    0 0 0 1.5px rgba(201, 162, 39, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 3px 10px rgba(0, 0, 0, 0.32);
+}
+
+.conv-thread-avatar__scene-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  color: rgba(212, 175, 106, 0.88);
+}

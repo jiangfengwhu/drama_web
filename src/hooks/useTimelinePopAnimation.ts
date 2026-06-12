@@ -2,18 +2,30 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { BUBBLE_POP_ANIM_MS } from '../constants/timeline-animation.const';
 
 /**
- * 气泡 pop 动画生命周期：
- * - 新条目首帧即带 --pop，重渲染不会提前摘掉 class（避免 both 卡在 opacity:0）
- * - 多条同时到达时分片 stagger，与 reveal 队列节奏对齐
+ * 气泡 pop 动画：新条目带 --pop；切换 thread 时不重播已有条目。
  */
-export function useTimelinePopAnimation(itemIds: readonly string[]) {
+export function useTimelinePopAnimation(
+  itemIds: readonly string[],
+  threadId: string,
+) {
   const seenIdsRef = useRef(new Set<string>());
+  const prevThreadRef = useRef(threadId);
   const [popIds, setPopIds] = useState<ReadonlySet<string>>(() => new Set());
   const timersRef = useRef<number[]>([]);
 
   useLayoutEffect(() => {
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
+
+    if (prevThreadRef.current !== threadId) {
+      prevThreadRef.current = threadId;
+      seenIdsRef.current.clear();
+      setPopIds(new Set());
+      if (itemIds.length > 0) {
+        itemIds.forEach((id) => seenIdsRef.current.add(id));
+      }
+      return;
+    }
 
     if (itemIds.length === 0) {
       seenIdsRef.current.clear();
@@ -47,7 +59,7 @@ export function useTimelinePopAnimation(itemIds: readonly string[]) {
       timersRef.current.forEach(clearTimeout);
       timersRef.current = [];
     };
-  }, [itemIds]);
+  }, [itemIds, threadId]);
 
   const shouldPop = (id: string) =>
     !seenIdsRef.current.has(id) || popIds.has(id);

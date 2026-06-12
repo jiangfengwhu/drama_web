@@ -17,6 +17,7 @@ import type {
   StoryConfig,
   ThemeId,
 } from '../types/story.types';
+import { parseUserInput } from '../services/user-input.util';
 import { templateSceneText, templateToNpcScript } from './script-builder';
 
 const THEME_TITLE_PREFIX: Partial<Record<ThemeId, string>> = {
@@ -115,32 +116,17 @@ function scriptLinesWithProgressiveCast(
   return rows;
 }
 
-function artisticProtagonistLine(action: string): string {
-  const intent = action.trim().slice(0, 48);
-  if (intent.length <= 12) {
-    return `行，${intent}。`;
-  }
-  return `明白了。${intent.slice(0, 36)}${intent.length > 36 ? '…' : ''}`;
-}
-
-import { pickDefaultEmotionLines } from '../constants/prompt-format.const';
-
-function mockEmotionLines(config: StoryConfig, userTurnCount: number): string[] {
-  const base = pickDefaultEmotionLines(config.audience);
-  if (userTurnCount % 2 === 1) {
-    base[base.length - 1] =
-      config.audience === 'male'
-        ? '你们逼我的，那就别怪我不客气了。'
-        : '既然你不仁，就别怪我不义了。';
-  }
-  return base;
+function protagonistLineFromInput(raw: string): string {
+  const { dialogue, behaviors } = parseUserInput(raw);
+  if (dialogue) return dialogue.slice(0, 120);
+  if (behaviors.length > 0) return behaviors[0].slice(0, 80);
+  return '…';
 }
 
 export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
   const pool = getRichScenePool(config.themeId, config.audience);
   const template = personalizeTemplate(pool[0], config.protagonistName);
   const sceneText = templateSceneText(template);
-  const openingCards = pickDefaultEmotionLines(config.audience);
 
   const narrLine = {
     kind: 'narr' as const,
@@ -154,10 +140,13 @@ export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
   ];
   const background = buildMockOpeningBackground(template, config.themeId);
 
-  const guideRaw = serializeGuideLines({
-    TITLE: background.title,
-    PROLOGUE: background.prologue,
-  }).join('\n');
+  const guideRaw = [
+    ...serializeGuideLines({
+      TITLE: background.title,
+      PROLOGUE: background.prologue,
+    }),
+    `GUIDE: SCENE_HEAD|INT. ${template.title.split(/[：:]/)[0]?.trim() || '未知地点'} - DAY`,
+  ].join('\n');
 
   const bodyLines = scriptLinesWithProgressiveCast(scriptLines, template);
   const castFragments = bodyLines
@@ -172,12 +161,10 @@ export function getMockOpening(config: StoryConfig): GeneratedTurnPayload {
         guideRaw,
         ...bodyLines,
         `MOOD: ${template.mood}`,
-        ...openingCards.map((card) => `CARD: ${card}`),
         'COMPLETE: no',
       ].join('\n'),
       background: { ...background, characters, sceneNow: sceneText },
       mood: template.mood,
-      attitudeCards: openingCards,
       isComplete: false,
     },
     config.themeId,
@@ -197,8 +184,7 @@ export function getMockNpcTurn(
   const moodKey = config.audience === 'female' ? 'romance' : 'tension';
   const beats = CONTINUATION_BEATS[moodKey] ?? CONTINUATION_BEATS.default;
 
-  const attitudeCards = mockEmotionLines(config, userTurnCount);
-  const protagonistLine = artisticProtagonistLine(userAction);
+  const protagonistLine = protagonistLineFromInput(userAction);
 
   const scriptLines: ScriptLine[] = [
     {
@@ -221,11 +207,9 @@ export function getMockNpcTurn(
       scriptRaw: [
         serializeScriptLines(scriptLines),
         `MOOD: ${template.mood}`,
-        ...attitudeCards.map((card) => `CARD: ${card}`),
         `COMPLETE: ${isComplete ? 'yes' : 'no'}`,
       ].join('\n'),
       mood: template.mood,
-      attitudeCards,
       isComplete,
     },
     config.themeId,

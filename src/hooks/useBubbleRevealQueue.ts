@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { BUBBLE_POP_ANIM_MS } from '../constants/timeline-animation.const';
 
 interface RevealSession {
@@ -9,21 +9,34 @@ interface RevealSession {
  * 气泡 reveal 队列：
  * - target 增长后逐条 +1 展示，禁止一次性跳满
  * - 上一条 pop 动画结束后再展示下一条
- * - 本回合第一条新气泡零延迟弹出
+ * - 切换 thread 时一次性展示已有历史，不重播
  */
 export function useBubbleRevealQueue<T>(
   committedItems: T[],
   streamItems: T[],
   isStreaming: boolean,
   hasPendingLine: boolean,
+  threadId: string,
 ) {
   const sessionRef = useRef<RevealSession | null>(null);
+  const prevThreadRef = useRef(threadId);
   const [visibleEndIndex, setVisibleEndIndex] = useState(committedItems.length);
+  const [interactionReady, setInteractionReady] = useState(false);
 
   const allItems = isStreaming
     ? [...committedItems, ...streamItems]
     : committedItems;
   const targetLength = allItems.length;
+
+  useLayoutEffect(() => {
+    if (prevThreadRef.current === threadId) return;
+    prevThreadRef.current = threadId;
+    sessionRef.current = null;
+    setVisibleEndIndex(committedItems.length);
+    if (!isStreaming && !hasPendingLine && committedItems.length > 0) {
+      setInteractionReady(true);
+    }
+  }, [threadId, committedItems.length, isStreaming, hasPendingLine]);
 
   useEffect(() => {
     if (!isStreaming || sessionRef.current !== null) return;
@@ -59,8 +72,6 @@ export function useBubbleRevealQueue<T>(
   const isRevealing = visibleEndIndex < targetLength;
   const showQueueLoading =
     isRevealing || (isStreaming && hasPendingLine);
-
-  const [interactionReady, setInteractionReady] = useState(false);
 
   useEffect(() => {
     if (isStreaming || hasPendingLine || visibleEndIndex < targetLength) {

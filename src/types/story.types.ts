@@ -1,4 +1,5 @@
 import type { ScriptLine } from './script.types';
+import type { ChatThread, SceneCutPayload, StoryScene } from './story-scene.types';
 
 export type AudienceType = 'male' | 'female';
 
@@ -56,18 +57,22 @@ export interface DialogueLine {
 
 export interface SceneStreamState {
   turnIndex: number;
+  threadId: string;
   scriptLines: ScriptLine[];
   liveTail?: string;
   lockedScript?: string;
   background?: StoryBackground;
   mood?: SceneMood;
-  attitudeCards?: string[];
   isStreaming: boolean;
   streamRevision: number;
 }
 
 export interface PlayerAction {
-  text: string;
+  raw: string;
+  /** 用户输入的台词（默认全文，不含 #() 行为段） */
+  dialogue: string;
+  /** #(...) / #（...） 行为指令 */
+  behaviors: string[];
 }
 
 export interface StoryActionRecord {
@@ -78,10 +83,10 @@ export interface StoryActionRecord {
 export interface StoryState {
   config: StoryConfig;
   turnIndex: number;
-  scriptLines: ScriptLine[];
   background: StoryBackground;
-  mood: SceneMood;
-  attitudeCards: string[];
+  scenes: StoryScene[];
+  threads: Record<string, ChatThread>;
+  activeThreadId: string;
   actionHistory: StoryActionRecord[];
 }
 
@@ -90,8 +95,9 @@ export interface GeneratedTurnPayload {
   scriptRaw: string;
   background?: StoryBackground;
   mood: SceneMood;
-  attitudeCards: string[];
   isComplete: boolean;
+  sceneCut?: SceneCutPayload;
+  sceneHeadRaw?: string;
 }
 
 export type SceneStreamUpdate =
@@ -106,7 +112,6 @@ export type SceneStreamUpdate =
           | 'lockedScript'
           | 'background'
           | 'mood'
-          | 'attitudeCards'
         >
       >;
     }

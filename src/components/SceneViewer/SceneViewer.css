@@ -15,13 +15,19 @@
   overflow: hidden;
 }
 
+.scene-viewer__sidebar {
+  display: none;
+  min-height: 0;
+  overflow: hidden;
+}
+
 @media (min-width: 901px) {
   .scene-viewer {
     display: grid;
-    grid-template-columns: minmax(260px, 340px) minmax(0, 1fr);
+    grid-template-columns: minmax(300px, 400px) minmax(0, 1fr);
   }
 
-  .scene-viewer__profile-panel {
+  .scene-viewer__sidebar {
     display: block;
   }
 }
@@ -44,7 +50,18 @@
   flex: 1;
   height: 100%;
   min-height: 0;
-  background: #111114;
+  background-color: var(--chat-surface);
+  background-image:
+    radial-gradient(ellipse 120% 72% at 50% -12%, rgba(201, 162, 39, 0.09) 0%, transparent 54%),
+    radial-gradient(ellipse 68% 58% at 90% 4%, rgba(96, 52, 82, 0.06) 0%, transparent 50%),
+    radial-gradient(ellipse 58% 52% at 10% 6%, rgba(62, 48, 102, 0.05) 0%, transparent 48%),
+    linear-gradient(
+      180deg,
+      var(--chat-stage-top) 0%,
+      var(--chat-stage-mid) 10%,
+      var(--chat-surface) 26%,
+      var(--chat-surface) 100%
+    );
   overflow: hidden;
   --chat-dock-content-height: 9.25rem;
   --chat-dock-scroll-gap: 0.75rem;
@@ -73,6 +90,25 @@
   gap: 0.85rem;
   min-height: min-content;
   padding: 0.75rem 0.75rem 0;
+}
+
+.scene-viewer__hover-profile {
+  position: absolute;
+  top: 3.5rem;
+  left: 0.75rem;
+  z-index: 4;
+  width: min(280px, calc(100% - 1.5rem));
+  pointer-events: none;
+}
+
+.scene-viewer__readonly-hint {
+  flex-shrink: 0;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.75rem;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .scene-viewer__visual {
@@ -247,6 +283,7 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  background: transparent;
 }
 
 .scene-viewer__chat-dock {
@@ -279,9 +316,14 @@
   visibility: visible;
   pointer-events: auto;
   transform: translateY(0);
-  background: #111114;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(17, 17, 20, 0.72) 28%,
+    var(--chat-surface) 100%
+  );
   padding-bottom: 0;
-  box-shadow: 0 -8px 20px rgba(17, 17, 20, 0.75);
+  box-shadow: none;
 }
 
 .scene-viewer__dock-layer--loading {

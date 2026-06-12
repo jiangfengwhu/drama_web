@@ -1,10 +1,8 @@
-import { STORY_PACE } from '../constants/game.const';
+import { STORY_PACE, PRIVATE_SCENE_CONTEXT_LINE_LIMIT } from '../constants/game.const';
 import { buildCraftPromptBlock } from '../constants/prompt-craft.const';
-import { ATTITUDE_CARD_COUNT_RANGE_LABEL } from '../constants/interaction.const';
 import {
-  buildCardPlotBindingBlock,
-  buildEmotionCardPromptBlock,
   buildPromptFormatBlock,
+  buildUserInputTurnBlock,
 } from '../constants/prompt-format.const';
 import {
   buildCastRevealRulesBlock,
@@ -19,11 +17,10 @@ import { applyGuideStreamPatch } from './guide-text.util';
 import {
   extractSceneText,
   ensureSceneLine,
-  formatRecentChatHistory,
+  formatRecentDialogueHistory,
   buildTurnContinuityPrompt,
+  buildPrivateTurnContinuityPrompt,
   detectConfrontationStagnation,
-  isAttitudeCardCountValid,
-  resolveAttitudeCards,
   parseScriptStream,
   prepareDisplayScriptLines,
 } from './script-text.util';
@@ -37,17 +34,31 @@ import type {
   StoryState,
 } from '../types/story.types';
 import type { ScriptLine } from '../types/script.types';
+import { buildSceneArchitecturePromptBlock } from '../constants/prompt-scene.const';
+import { META_CUT_PREFIX } from '../constants/scene-heading.const';
+import { parseSceneHeadGuide } from './scene-meta.util';
+import {
+  appendThreadLines,
+  applySceneCut,
+  bootstrapOpeningScene,
+  createInitialThreadShell,
+  getActiveThread,
+  getSceneForThread,
+  getSceneGroupThreadLines,
+  getThreadLines,
+  inferSceneHeadFromLines,
+  patchActiveSceneIntro,
+  updateThreadTurnMeta,
+} from './story-thread.util';
+import type { ChatThread, SceneHeadDraft, StoryScene } from '../types/story-scene.types';
+import {
+  toPlayerAction,
+} from './user-input.util';
+import type { UserTurnInput } from '../types/user-input.types';
 import {
   chatCompletionStream,
   isAiConfigured,
 } from './ai-chat.service';
-
-function ensureAttitudeCards(
-  scriptRaw: string,
-  cards: string[] | undefined,
-): string[] {
-  return resolveAttitudeCards(scriptRaw, cards);
-}
 
 function minTurnsFor(config: StoryConfig): number {
   return STORY_PACE[config.length].minTurns;
@@ -66,11 +77,17 @@ function completeRuleForTurn(config: StoryConfig, userTurnCount: number): string
   return `6. COMPLETE: yes 或 no（已选 ${userTurnCount} 次，仅主线真正闭环且本回合可收束时用 yes）`;
 }
 
-function npcSystemPrompt(config: StoryConfig, isOpening: boolean): string {
+function npcSystemPrompt(
+  config: StoryConfig,
+  isOpening: boolean,
+  thread?: ChatThread,
+): string {
   const theme = resolveTheme(config);
   const protagonist = config.protagonistName.trim();
+  const isPrivate = thread?.kind === 'private';
   const craftBlock = buildCraftPromptBlock(config, isOpening);
   const castBlock = buildCastRevealRulesBlock(protagonist);
+  const sceneBlock = buildSceneArchitecturePromptBlock(isPrivate);
 
   const {
     maxSceneChars,
@@ -88,61 +105,74 @@ function npcSystemPrompt(config: StoryConfig, isOpening: boolean): string {
     ? `${openingMinMsg}-${openingMaxMsg}`
     : `${turnMinMsg}-${turnMaxMsg}`;
 
-  const narrRange = isOpening ? `0-${openingMaxNarr}` : `0-${turnMaxNarr}`;
+  const narrRange = isOpening
+    ? `0-${openingMaxNarr}`
+    : isPrivate
+      ? '0'
+      : `0-${turnMaxNarr}`;
 
   const openingGuideBlock = isOpening
     ? `${GUIDE_LINE} ${GUIDE_FIELD.TITLE}|故事名（≤${GUIDE_LIMITS.title}字）
 ${GUIDE_LINE} ${GUIDE_FIELD.PROLOGUE}|前情提要（≤${GUIDE_LIMITS.prologue}字，仅 1 句：此刻最要命的一件事，禁止背景年表）
-${SCRIPT_LINE.SCENE} 场景提示（≤${maxSceneChars}字：时间地点 + 当前局势，一句入戏）`
+${GUIDE_LINE} ${GUIDE_FIELD.SCENE_HEAD}|slugline（INT/EXT. 地点 - 时间，禁止附带氛围）
+${SCRIPT_LINE.SCENE} 环境氛围（≤${maxSceneChars}字，一行，让玩家代入）`
     : `${GUIDE_LINE} ${GUIDE_FIELD.CAST}|（仅本回合首次登场的新角色，每人一行，紧挨其首条 MSG 之前）`;
 
   const protagonistRule = isOpening
     ? `  - 开场仅写 NPC 角色名，禁止出现「你」或「${protagonist}」
-  - 开场 MSG 须构成群戏：≥2 名 NPC，且 ≥1 条为 NPC 互相对话（见开场群戏法则）`
-    : `  - 本回合须先写 1 条 MSG:你|台词，将用户【意图指令】艺术化为主角对白（≤${maxMsgChars}字，禁止复述指令原文，禁止括号旁白）
-  - 台词须改变局势或立场，动作与神态融进措辞，让玩家从话里脑补画面（见 MSG 台词法则）
-  - 再写 ${turnMinMsg - 1}-${turnMaxMsg - 1} 条 NPC 对白：首条须接「你」并含信息增量（泄密/交易/软肋）；≥1 条 NPC↔NPC；禁止循环对骂
-  - 僵持时须 NARR 引入第三方打断；NPC 用角色名，主角固定「你」`;
+  - 开场 MSG 须构成群戏：≥2 名 NPC 开口，且 ≥1 条 NPC 互相对话；每人首次开口前 GUIDE: CAST`
+    : isPrivate
+      ? `  - 本回合为私聊：仅主角「你」与 ${thread?.participantNames.find((n) => n !== protagonist && n !== '你') ?? '该 NPC'} 可 MSG
+  - 先写 1 条 MSG:你|台词，再写 1-3 条 NPC 回复；禁止第三人插话、禁止群戏`
+      : `  - 本回合为场景群聊：仅已在对话中出现的 NPC 可 MSG（${thread?.participantNames.join('、') || '渐进登场'}）
+  - 先写 1 条 MSG:你|台词，再写 ${turnMinMsg - 1}-${turnMaxMsg - 1} 条 NPC；首条须接「你」；≥1 条 NPC↔NPC
+  - 若需换场：${META_CUT_PREFIX}|slugline，并输出 ${SCRIPT_LINE.SCENE} 新环境`;
+
+  const engagementRules = isPrivate
+    ? `4. 密谈承接场景：对白须回应群聊里刚发生的事；禁止换场、禁止第三人 MSG。
+5. 回合钩子：MOOD 前最后一条须让玩家想继续密谈或回群聊出牌。
+6. 仅双人 MSG：禁止 NARR 群戏、禁止 META: CUT；NPC 须给出群聊里听不到的信息。`
+    : `4. 反停滞：禁止循环争吵与纯情绪宣泄；僵持 2 轮须 NARR 第三方打断（见推进法则）。
+5. 回合钩子：MOOD 前最后一条 MSG 须让玩家想立刻输入下一行动（筹码/危险/秘密露头）。
+6. 接戏 + 群戏：NPC 接上一句；至少 1 条 NPC↔NPC（私聊除外）；禁止幻词反问。`;
 
   return `你是互动短剧的首席编剧。输出会被程序逐行解析，格式错误即失败。
 
 核心目标（见互动爽感第一性原理）：30 秒内抓住用户，每回合让用户感到「我的选择立刻改变了局面」。快、准、有钩子；禁止散文式铺垫与重复施压。
 
-根据用户【意图指令】艺术化为主角言行，并调度 NPC 群戏：当场接招、当场变局。文笔像高分短剧剧本，不是慢热网文连载。
+根据用户【台词与行为】续写：台词进 MSG:你|，行为进 NARR/他人反应，并调度 NPC 群戏。
 
 ${craftBlock}
 
+${sceneBlock}
+
 【世界观与设定】
 题材：「${theme.title}」——${theme.description}
-主角：「${protagonist}」（用户扮演）。用户输入的是行为/意图指令，不是台词原文。
+主角：「${protagonist}」（用户扮演）。用户默认输入台词原文；#() 内为行为指令，非对白。
 出场人物：随剧情逐步登场；每人首次开口前用 GUIDE: CAST 登记，勿在开场预写全员。
 
 ${castBlock}
 
 ${buildPromptFormatBlock()}
 
-${buildEmotionCardPromptBlock(protagonist)}
+${buildUserInputTurnBlock()}
 
 【本回合输出协议摘要】
 ${openingGuideBlock}
 ${SCRIPT_LINE.NARR} 关键画面（${narrRange} 行，可省略；每行 ≤${maxNarrChars}字，须带新信息，禁止空描）
 ${SCRIPT_LINE.MSG} 角色名|台词正文
 ${META_LINE.MOOD} tension|romance|triumph|sorrow|neutral
-${META_LINE.CARD} 情绪滑动条台词（${ATTITUDE_CARD_COUNT_RANGE_LABEL} 行，情绪从退让递进到决裂）
 ${META_LINE.COMPLETE} yes 或 no
 
 【写作铁律】
 1. MSG 格式不可变：MSG: 角色名|纯台词；禁止括号旁白；台词宜短，单条 ≤${maxMsgChars} 字，须精心设计。
 2. 反墨迹：NARR 最多 ${narrRange} 行；无新信息则省略；禁止用旁白代替对白推进。
-3. 即时反馈：主角/用户意图须在 NPC 首条对白中得到当场回应，局势同回合物理偏移（动作+泄密/交易，禁止只对骂）。
-4. 反停滞：禁止循环争吵与纯情绪宣泄；僵持 2 轮须 NARR 第三方打断（见推进法则）。
-5. 回合钩子：MOOD 前最后一条 MSG 须制造「想选 CARD」的抉择压力（见情绪卡点法则）。
-6. 接戏 + 群戏：NPC 接上一句；至少 1 条 NPC↔NPC；禁止幻词反问。
-7. CARD 必填：MOOD 后、COMPLETE 前，${ATTITUDE_CARD_COUNT_RANGE_LABEL} 行 CARD，须为可执行动作意图，绑定本回合情境。
+3. 即时反馈：用户台词/行为须在 NPC 首条对白中得到当场回应，局势同回合偏移。
+${engagementRules}
+7. 禁止输出 CARD 或任何备选台词列表；回合尾部：全部 MSG → MOOD → COMPLETE。
 ${completeRuleForSystem(config)}
-${isOpening ? '8. 开场须严格按序：GUIDE TITLE → PROLOGUE → SCENE → NARR → MSG；禁止开场批量 CAST；每个首次开口 NPC 须先 GUIDE: CAST 再 MSG；开场 MSG 须有 NPC 互相对话。' : `8. ${protagonistRule}`}
+${isOpening ? '8. 开场须严格按序：GUIDE TITLE → PROLOGUE → SCENE_HEAD → SCENE → NARR → MSG；每个首次开口 NPC 须先 GUIDE: CAST 再 MSG。' : `8. ${protagonistRule}`}
 9. 本回合 ${msgRange} 条 MSG（${isOpening ? '全部 NPC，禁止「你」，须含 NPC↔NPC' : '含 1 条主角 + NPC 群戏'}）。
-${isOpening ? '' : `10. 回合尾部顺序固定：全部 MSG 写完后 → MOOD → ${ATTITUDE_CARD_COUNT_RANGE_LABEL} 行 CARD: → COMPLETE；禁止在 NPC MSG 未写完时提前输出 MOOD/CARD。`}
 
 只输出协议行。最后一行必须是 COMPLETE。输出完立即停止。`;
 }
@@ -159,64 +189,115 @@ function openingUserPrompt(
 
   return `互动短剧开场。主题：${theme.title}。世界观：${theme.description}。
 
-【开场目标】30 秒内让用户想滑动 CARD：冲突具体、局面已烧、主角被卷入，且感到「选哪边都肉痛」。
+【开场目标】30 秒内让用户想输入行动：冲突具体、局面已烧、主角被卷入。
 
-【反寡淡 — 开场必须Establish】
-· 主角一项致命缺陷/限制（说谎失效、不能露身份、欠人情必还等），须在 PROLOGUE 或局面里可感
-· 至少 1 名 NPC 的 CAST 含具体「暗线」，MSG 里泄露一丝潜台词
-· 一处信息差炸弹：一方已知危险，另一方尚不知情
-· 最后一条 MSG 埋下本集「残忍两难」的种子（Right vs Right 或 Wrong vs Wrong）
+【反寡淡 — 开场必须 Establish】
+· 主角一项致命缺陷/限制，须在 PROLOGUE 或局面里可感
+· 至少 1 名 NPC 的 CAST 含具体「暗线」
+· 一处信息差炸弹
+· 最后一条 MSG 埋下本集两难种子
 
-开场 MSG 段：≥2 名 NPC，≥1 条 NPC↔NPC；前 2 条对白内亮出核心矛盾。禁止排队训主角、禁止先铺世界观。
+开场 MSG 段：≥2 名 NPC，≥1 条 NPC↔NPC；前 2 条对白内亮出核心矛盾。
 
 【硬性顺序 — 不可跳步】
-1. GUIDE: TITLE → PROLOGUE（仅 1 句，不含 CAST）
-2. SCENE: 一行入戏
-3. NARR: 0-${SCRIPT_LIMITS.openingMaxNarr} 行（可省略；有则必须带新信息）
-4. 每个首次开口 NPC：GUIDE: CAST（含暗线）→ MSG（共 ${SCRIPT_LIMITS.openingMinMsg}-${SCRIPT_LIMITS.openingMaxMsg} 条 MSG，短句快切）
-5. MOOD → CARD（${ATTITUDE_CARD_COUNT_RANGE_LABEL} 行，各档附带不同代价）→ COMPLETE: no
+1. GUIDE: TITLE → PROLOGUE → SCENE_HEAD（仅 slugline）
+2. SCENE: 一行环境氛围
+3. NARR: 0-${SCRIPT_LIMITS.openingMaxNarr} 行（可省略）
+4. 每个首次开口 NPC：GUIDE: CAST → MSG（共 ${SCRIPT_LIMITS.openingMinMsg}-${SCRIPT_LIMITS.openingMaxMsg} 条）
+5. MOOD → COMPLETE: no
 
-${buildCardPlotBindingBlock()}
+禁止开场批量 CAST。最后一条 MSG 须让用户想立刻输入。说完即停。${castSuffix}`;
+}
 
-禁止开场批量 CAST；CARD 不可省略。最后一条 MSG 须让用户想立刻选一句。说完即停。${castSuffix}`;
+export interface TurnPromptContext {
+  threadLines: ScriptLine[];
+  groupLines?: ScriptLine[];
+  scene?: StoryScene;
 }
 
 function turnUserPrompt(
   config: StoryConfig,
-  scriptLines: ScriptLine[],
-  userAction: string,
+  ctx: TurnPromptContext,
+  userInput: UserTurnInput,
   userTurnCount: number,
-  storyBackground?: StoryBackground,
+  storyBackground: StoryBackground | undefined,
+  thread?: ChatThread,
 ): string {
+  const { threadLines, groupLines, scene } = ctx;
   const protagonist = config.protagonistName.trim();
-  const history = formatRecentChatHistory(scriptLines, protagonist);
-  const sceneHint =
-    scriptLines.find((l) => l.kind === 'scene')?.text ??
-    scriptLines.find((l) => l.kind === 'narr')?.text ??
-    '';
   const castSuffix = buildRegisteredCastUserSuffix(
     storyBackground?.characters ?? '',
     protagonist,
   );
 
-  return `【前情提要】
-${sceneHint ? `[环境] ${sceneHint}` : ''}
-[剧情对白]
-${history || '（尚无记录）'}
+  const isPrivate = thread?.kind === 'private';
+  const npcName = thread?.participantNames.find(
+    (name) => name !== protagonist && name !== '你',
+  );
 
-${buildTurnContinuityPrompt(scriptLines, protagonist, userAction)}
+  if (isPrivate) {
+    const groupHistory = groupLines?.length
+      ? formatRecentDialogueHistory(
+          groupLines,
+          protagonist,
+          PRIVATE_SCENE_CONTEXT_LINE_LIMIT,
+        )
+      : '';
+    const privateHistory = formatRecentDialogueHistory(threadLines, protagonist);
+    const sceneAnchor = scene?.slugline?.trim() || '';
+    const sceneBlock = sceneAnchor || '见下方群聊记录';
 
-【执行指令 — 严格按序，一行一协议】
-1. ${detectConfrontationStagnation(scriptLines, protagonist) ? 'NARR: 1 行外部打断（强制）→ ' : 'NARR: 0-1 行（僵持时强制打断；否则默认省略）→ '}
-2. MSG: 你|台词 ← 艺术化「用户选中主角意图」，纯对白，局势须从台词可推知变化
-3. 新 NPC：GUIDE: CAST → MSG
-4. MSG: ${SCRIPT_LIMITS.turnMinMsg - 1}-${SCRIPT_LIMITS.turnMaxMsg - 1} 条 NPC（首条接「你」且须泄密/交易/软肋；≥1 条 NPC↔NPC；禁止循环对骂；最后一条 CARD 钩子）
-5. MOOD → CARD（${ATTITUDE_CARD_COUNT_RANGE_LABEL} 行，纯台词，各档精心打磨）→ COMPLETE
+    const groupSection = groupHistory
+      ? `【场景群聊近况】\n${groupHistory}`
+      : '【场景群聊近况】（尚无群聊记录）';
+    const privateSection = privateHistory
+      ? `【本次密谈】\n${privateHistory}`
+      : '【本次密谈】（首次开口）';
+
+    return `${sceneBlock}
+
+${groupSection}
+
+${privateSection}
+
+${buildPrivateTurnContinuityPrompt(
+  threadLines,
+  protagonist,
+  userInput,
+  npcName ?? 'NPC',
+)}
+
+【执行指令 — 严格按序】
+1. MSG: 你|台词 → 2. MSG: ${npcName ?? 'NPC'}|…（1-3 条）→ 3. MOOD → COMPLETE
 ${completeRuleForTurn(config, userTurnCount)}
 
-${buildCardPlotBindingBlock()}
+本回合须推进密谈信息/关系，并暗示如何影响当前场景。禁止转场、禁止第三人。说完即停。${castSuffix}`;
+  }
 
-本回合须让用户感到「局面因我的选择变了」，且 CARD 无 obvious 正确答案。缺 CARD、首条 NPC 不接主角、最后一条无钩子 → 失败。说完即停。${castSuffix}`;
+  const sceneAnchor =
+    scene?.slugline?.trim() ||
+    thread?.title?.trim() ||
+    '当前场景';
+  const dialogueHistory = formatRecentDialogueHistory(threadLines, protagonist);
+  const dialogueSection = dialogueHistory
+    ? `【近期对白】\n${dialogueHistory}`
+    : '【近期对白】（尚无记录）';
+
+  return `${sceneAnchor}
+
+${dialogueSection}
+
+${buildTurnContinuityPrompt(threadLines, protagonist, userInput)}
+
+【执行指令 — 严格按序】
+1. ${detectConfrontationStagnation(threadLines, protagonist) ? 'NARR: 外部打断 → ' : ''}MSG: 你|台词
+2. 新 NPC：GUIDE: CAST → MSG
+3. MSG: ${SCRIPT_LIMITS.turnMinMsg - 1}-${SCRIPT_LIMITS.turnMaxMsg - 1} 条已登场 NPC
+4. 需转场时：${META_CUT_PREFIX}|slugline + ${SCRIPT_LINE.SCENE} 新环境（在 MOOD 之前）
+5. MOOD → COMPLETE
+${completeRuleForTurn(config, userTurnCount)}
+
+本回合须推进当前场景局面。说完即停。${castSuffix}`;
 }
 
 function resolveIsComplete(
@@ -246,8 +327,6 @@ function emitScriptChunk(
   };
 
   if (turnMeta.mood) fields.mood = turnMeta.mood;
-  const cards = resolveAttitudeCards(buffer, turnMeta.attitudeCards);
-  if (cards.length > 0) fields.attitudeCards = cards;
 
   if (storyBackground) {
     fields.background = applyGuideStreamPatch(
@@ -267,7 +346,6 @@ function buildPayloadFromRaw(
   isOpening: boolean,
   storyBackground: StoryBackground | undefined,
   userTurnCount: number,
-  attitudeCardsOverride?: string[],
 ): GeneratedTurnPayload {
   const { lines, guide, turnMeta } = parseScriptStream(`${scriptRaw}\n`);
   const sceneText = extractSceneText(lines);
@@ -277,9 +355,6 @@ function buildPayloadFromRaw(
     protagonistName: config.protagonistName,
   });
   const mood = turnMeta.mood ?? 'neutral';
-  const attitudeCards =
-    attitudeCardsOverride ??
-    ensureAttitudeCards(scriptRaw, turnMeta.attitudeCards);
   const background = storyBackground
     ? applyGuideStreamPatch(
         guide,
@@ -294,7 +369,6 @@ function buildPayloadFromRaw(
     scriptRaw,
     background,
     mood,
-    attitudeCards,
     isComplete: isOpening
       ? false
       : resolveIsComplete(
@@ -302,44 +376,19 @@ function buildPayloadFromRaw(
           userTurnCount,
           turnMeta.isComplete ?? false,
         ),
+    sceneCut: turnMeta.sceneCut,
+    sceneHeadRaw: guide.SCENE_HEAD,
   };
-}
-
-async function requestCardTailRepair(
-  config: StoryConfig,
-  scriptRaw: string,
-  isOpening: boolean,
-): Promise<string[]> {
-  let repairBuffer = '';
-  for await (const delta of chatCompletionStream({
-    messages: [
-      { role: 'system', content: npcSystemPrompt(config, isOpening) },
-      { role: 'assistant', content: scriptRaw },
-      {
-        role: 'user',
-        content: `上述回合输出缺少 CARD 态度滑动条（每回合必填）。请仅续写，不要重复已有 MSG/NARR：
-MOOD: 选一个氛围词
-随后 ${ATTITUDE_CARD_COUNT_RANGE_LABEL} 行 CARD:（每行主角台词，须绑定上文情境与 NPC；场面简用 3 条，标准 4 条，对峙多用 5 条）
-COMPLETE: no`,
-      },
-    ],
-  })) {
-    repairBuffer += delta;
-  }
-
-  const repairRaw = repairBuffer.trim();
-  if (!repairRaw) return [];
-  const { turnMeta } = parseScriptStream(`${repairRaw}\n`);
-  return resolveAttitudeCards(repairRaw, turnMeta.attitudeCards);
 }
 
 async function aiGenerateTurn(
   config: StoryConfig,
   isOpening: boolean,
-  existingLines: GeneratedTurnPayload['scriptLines'],
+  promptCtx: TurnPromptContext,
   userTurnCount: number,
-  userAction: string,
+  userInput: UserTurnInput,
   storyBackground: StoryBackground | undefined,
+  thread: ChatThread | undefined,
   onUpdate: (u: SceneStreamUpdate) => void,
 ): Promise<GeneratedTurnPayload> {
   let storyBuffer = '';
@@ -349,17 +398,18 @@ async function aiGenerateTurn(
     ? openingUserPrompt(config, storyBackground)
     : turnUserPrompt(
         config,
-        existingLines,
-        userAction,
+        promptCtx,
+        userInput,
         userTurnCount,
         storyBackground,
+        thread,
       );
 
   for await (const delta of chatCompletionStream({
     messages: [
       {
         role: 'system',
-        content: npcSystemPrompt(config, isOpening),
+        content: npcSystemPrompt(config, isOpening, thread),
       },
       { role: 'user', content: userContent },
     ],
@@ -378,26 +428,7 @@ async function aiGenerateTurn(
   const scriptRaw = storyBuffer.trim();
   if (!scriptRaw) throw new Error('Empty script from AI');
 
-  let { lines, guide, turnMeta } = parseScriptStream(`${scriptRaw}\n`);
-  let attitudeCards = ensureAttitudeCards(scriptRaw, turnMeta.attitudeCards);
-
-  if (!isAttitudeCardCountValid(attitudeCards.length)) {
-    console.warn('[Story Engine] invalid CARD count, requesting tail repair');
-    const repaired = await requestCardTailRepair(config, scriptRaw, isOpening);
-    if (repaired.length > 0) {
-      attitudeCards = repaired;
-      const repairMeta = parseScriptStream(
-        `${scriptRaw}\n${repaired.map((c) => `CARD: ${c}`).join('\n')}\n`,
-      );
-      turnMeta = {
-        ...turnMeta,
-        ...repairMeta.turnMeta,
-        attitudeCards: repaired,
-      };
-      lines = repairMeta.lines.length > lines.length ? repairMeta.lines : lines;
-      guide = repairMeta.guide;
-    }
-  }
+  const { lines, guide, turnMeta } = parseScriptStream(`${scriptRaw}\n`);
 
   revision += 1;
   const sceneText = extractSceneText(lines);
@@ -410,7 +441,6 @@ async function aiGenerateTurn(
       scriptLines: withScene,
       liveTail: '',
       mood: turnMeta.mood,
-      attitudeCards,
       background: storyBackground
         ? applyGuideStreamPatch(
             guide,
@@ -428,7 +458,6 @@ async function aiGenerateTurn(
     isOpening,
     storyBackground,
     userTurnCount,
-    attitudeCards,
   );
 }
 
@@ -437,13 +466,13 @@ async function mockGenerateTurn(
   isOpening: boolean,
   _existingLines: GeneratedTurnPayload['scriptLines'],
   userTurnCount: number,
-  userAction: string,
+  userInput: UserTurnInput,
   storyBackground: StoryBackground | undefined,
   onUpdate: (u: SceneStreamUpdate) => void,
 ): Promise<GeneratedTurnPayload> {
   const mock = isOpening
     ? getMockOpening(config)
-    : getMockNpcTurn(config, userTurnCount, userAction);
+    : getMockNpcTurn(config, userTurnCount, userInput.raw);
 
   const scriptRaw = mock.scriptRaw;
   const rawLines = scriptRaw.split('\n');
@@ -475,7 +504,6 @@ async function mockGenerateTurn(
       scriptLines: withScene,
       liveTail: '',
       mood: turnMeta.mood ?? mock.mood,
-      attitudeCards: mock.attitudeCards,
       background: storyBackground
         ? applyGuideStreamPatch(
             guide,
@@ -499,10 +527,11 @@ async function mockGenerateTurn(
 async function generateTurnStreaming(
   config: StoryConfig,
   isOpening: boolean,
-  existingLines: GeneratedTurnPayload['scriptLines'],
+  promptCtx: TurnPromptContext,
   userTurnCount: number,
-  userAction: string,
+  userInput: UserTurnInput,
   openingBase: StoryBackground | undefined,
+  thread: ChatThread | undefined,
   onUpdate: (u: SceneStreamUpdate) => void,
 ): Promise<GeneratedTurnPayload> {
   if (isAiConfigured()) {
@@ -510,10 +539,11 @@ async function generateTurnStreaming(
       return await aiGenerateTurn(
         config,
         isOpening,
-        existingLines,
+        promptCtx,
         userTurnCount,
-        userAction,
+        userInput,
         openingBase,
+        thread,
         onUpdate,
       );
     } catch (err) {
@@ -524,9 +554,9 @@ async function generateTurnStreaming(
   return mockGenerateTurn(
     config,
     isOpening,
-    existingLines,
+    promptCtx.threadLines,
     userTurnCount,
-    userAction,
+    userInput,
     openingBase,
     onUpdate,
   );
@@ -534,10 +564,12 @@ async function generateTurnStreaming(
 
 export function createStoryState(config: StoryConfig): StoryState {
   const theme = resolveTheme(config);
+  const threads = createInitialThreadShell(config);
+  const activeThreadId = Object.keys(threads)[0];
+
   return {
     config,
     turnIndex: 0,
-    scriptLines: [],
     background: {
       title: '',
       prologue: '',
@@ -545,8 +577,9 @@ export function createStoryState(config: StoryConfig): StoryState {
       sceneNow: '',
       atmosphere: theme.subtitle,
     },
-    mood: 'neutral',
-    attitudeCards: [],
+    scenes: [],
+    threads,
+    activeThreadId,
     actionHistory: [],
   };
 }
@@ -554,15 +587,17 @@ export function createStoryState(config: StoryConfig): StoryState {
 export async function generateOpeningStreaming(
   config: StoryConfig,
   openingBase: StoryBackground,
+  _activeThreadId: string,
   onUpdate: (u: SceneStreamUpdate) => void,
 ): Promise<GeneratedTurnPayload> {
   const payload = await generateTurnStreaming(
     config,
     true,
-    [],
+    { threadLines: [] },
     0,
-    '',
+    { raw: '', dialogue: '', behaviors: [] },
     openingBase,
+    undefined,
     onUpdate,
   );
 
@@ -571,20 +606,35 @@ export async function generateOpeningStreaming(
 }
 
 export async function generateNpcTurnStreaming(
-  config: StoryConfig,
-  scriptLines: GeneratedTurnPayload['scriptLines'],
-  userTurnCount: number,
-  userAction: string,
-  storyBackground: StoryBackground,
+  state: StoryState,
+  userInput: UserTurnInput,
   onUpdate: (u: SceneStreamUpdate) => void,
 ): Promise<GeneratedTurnPayload> {
+  const thread = getActiveThread(state);
+  const threadLines = getThreadLines(state, state.activeThreadId);
+
+  let scene: StoryScene | undefined;
+  let groupLines: ScriptLine[] | undefined;
+
+  if (thread?.kind === 'private') {
+    scene = thread.sceneId
+      ? getSceneForThread(state, thread)
+      : undefined;
+    if (scene) {
+      groupLines = getSceneGroupThreadLines(state, scene);
+    }
+  } else if (thread?.sceneId) {
+    scene = getSceneForThread(state, thread);
+  }
+
   const payload = await generateTurnStreaming(
-    config,
+    state.config,
     false,
-    scriptLines,
-    userTurnCount,
-    userAction,
-    storyBackground,
+    { threadLines, groupLines, scene },
+    state.actionHistory.length,
+    userInput,
+    state.background,
+    thread,
     onUpdate,
   );
 
@@ -592,17 +642,17 @@ export async function generateNpcTurnStreaming(
   return payload;
 }
 
-export function toPlayerAction(text: string) {
-  return { text: text.trim() };
-}
-
 export function getAudienceLabel(audience: AudienceType): string {
   return audience === 'male' ? '偏硬核 · 布局反击' : '偏情感 · 关系博弈';
 }
 
-export function createInitialStreamState(turnIndex: number): SceneStreamState {
+export function createInitialStreamState(
+  turnIndex: number,
+  threadId: string,
+): SceneStreamState {
   return {
     turnIndex,
+    threadId,
     scriptLines: [],
     liveTail: '',
     isStreaming: true,
@@ -610,8 +660,11 @@ export function createInitialStreamState(turnIndex: number): SceneStreamState {
   };
 }
 
-export function recordUserAction(state: StoryState, text: string): StoryState {
-  const action = toPlayerAction(text);
+export function recordUserAction(
+  state: StoryState,
+  userInput: UserTurnInput,
+): StoryState {
+  const action = toPlayerAction(userInput.raw);
   return {
     ...state,
     turnIndex: state.turnIndex + 1,
@@ -625,13 +678,50 @@ export function recordUserAction(state: StoryState, text: string): StoryState {
 export function mergeTurnResult(
   state: StoryState,
   payload: GeneratedTurnPayload,
-  _isOpening: boolean,
+  isOpening: boolean,
 ): StoryState {
-  return {
-    ...state,
-    scriptLines: [...state.scriptLines, ...payload.scriptLines],
-    background: payload.background ?? state.background,
+  let next: StoryState = payload.background
+    ? { ...state, background: payload.background }
+    : state;
+
+  if (isOpening) {
+    const head = payload.sceneHeadRaw
+      ? parseSceneHeadGuide(payload.sceneHeadRaw)
+      : null;
+    const draft =
+      head ??
+      inferSceneHeadFromLines(extractSceneText(payload.scriptLines));
+    const sceneText = extractSceneText(payload.scriptLines);
+    const finalized: SceneHeadDraft = {
+      ...draft,
+      sceneIntro: draft.sceneIntro?.trim() || sceneText || '',
+    };
+    next = bootstrapOpeningScene(next, finalized, payload.scriptLines);
+    return updateThreadTurnMeta(next, next.activeThreadId, {
+      mood: payload.mood,
+    });
+  }
+
+  const threadId = next.activeThreadId;
+  const activeBeforeCut = getActiveThread(next);
+  const sceneText = extractSceneText(payload.scriptLines);
+
+  if (payload.sceneCut && activeBeforeCut?.kind !== 'private') {
+    next = applySceneCut(next, payload.sceneCut);
+    next = appendThreadLines(next, next.activeThreadId, payload.scriptLines);
+    if (sceneText) {
+      next = patchActiveSceneIntro(next, sceneText);
+    }
+  } else {
+    next = appendThreadLines(next, threadId, payload.scriptLines);
+    if (sceneText && activeBeforeCut?.kind === 'scene') {
+      next = patchActiveSceneIntro(next, sceneText);
+    }
+  }
+
+  next = updateThreadTurnMeta(next, next.activeThreadId, {
     mood: payload.mood,
-    attitudeCards: payload.attitudeCards,
-  };
+  });
+
+  return next;
 }

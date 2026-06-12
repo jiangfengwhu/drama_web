@@ -12,6 +12,9 @@ export const OPENAI_MODEL = 'gpt-5.4-mini';
 /** 回合 user prompt 中保留的最近剧本行数（控制上下文膨胀） */
 export const TURN_HISTORY_LINE_LIMIT = 36;
 
+/** 私聊 prompt 中引用的场景群聊行数上限 */
+export const PRIVATE_SCENE_CONTEXT_LINE_LIMIT = 28;
+
 export const REVEAL_CHARS_PER_TICK = 2;
 export const REVEAL_TICK_MS = 40;
 

@@ -6,11 +6,20 @@ import {
   generateOpeningStreaming,
   mergeTurnResult,
   recordUserAction,
-  toPlayerAction,
 } from '../services/story-engine.service';
 import {
-  prepareDisplayScriptLines,
-} from '../services/script-text.util';
+  parseUserInput,
+  userInputEffectiveLength,
+} from '../services/user-input.util';
+import {
+  ensurePrivateThread,
+  getActiveMood,
+  getActiveThread,
+  getThreadLines,
+  isThreadWritable,
+  switchActiveThread,
+} from '../services/story-thread.util';
+import { prepareDisplayScriptLines } from '../services/script-text.util';
 import type {
   SceneStreamState,
   SceneStreamUpdate,
@@ -33,10 +42,6 @@ function applyChunkUpdate(
     streamRevision: revision,
     isStreaming: true,
     mood: fields.mood !== undefined ? fields.mood : prev.mood,
-    attitudeCards:
-      fields.attitudeCards !== undefined
-        ? fields.attitudeCards
-        : prev.attitudeCards,
     lockedScript:
       fields.lockedScript !== undefined ? fields.lockedScript : prev.lockedScript,
     scriptLines:
@@ -93,11 +98,11 @@ export function useStory() {
   );
 
   const runOpening = useCallback(
-    async (config: StoryConfig, openingBase: StoryBackground) => {
+    async (config: StoryConfig, openingBase: StoryBackground, threadId: string) => {
       abortRef.current = false;
-      setStreamState(createInitialStreamState(0));
+      setStreamState(createInitialStreamState(0, threadId));
 
-      await generateOpeningStreaming(config, openingBase, (update) => {
+      await generateOpeningStreaming(config, openingBase, threadId, (update) => {
         handleStreamEvent(update, (complete) => {
           setStoryState((prev) => {
             if (!prev) return prev;
@@ -113,27 +118,22 @@ export function useStory() {
   );
 
   const runNpcTurn = useCallback(
-    async (state: StoryState, userAction: string) => {
-      setStreamState(createInitialStreamState(state.turnIndex));
-
-      await generateNpcTurnStreaming(
-        state.config,
-        state.scriptLines,
-        state.actionHistory.length,
-        userAction,
-        state.background,
-        (update) => {
-          handleStreamEvent(update, (complete) => {
-            setStoryState((prev) => {
-              if (!prev) return prev;
-              const merged = mergeTurnResult(prev, complete.payload, false);
-              if (complete.payload.isComplete) setStoryComplete(true);
-              return merged;
-            });
-            setStreamState(null);
-          });
-        },
+    async (state: StoryState, userInput: ReturnType<typeof parseUserInput>) => {
+      setStreamState(
+        createInitialStreamState(state.turnIndex, state.activeThreadId),
       );
+
+      await generateNpcTurnStreaming(state, userInput, (update) => {
+        handleStreamEvent(update, (complete) => {
+          setStoryState((prev) => {
+            if (!prev) return prev;
+            const merged = mergeTurnResult(prev, complete.payload, false);
+            if (complete.payload.isComplete) setStoryComplete(true);
+            return merged;
+          });
+          setStreamState(null);
+        });
+      });
     },
     [handleStreamEvent],
   );
@@ -147,7 +147,7 @@ export function useStory() {
       setStoryState(state);
 
       try {
-        await runOpening(config, state.background);
+        await runOpening(config, state.background, state.activeThreadId);
       } catch {
         setStreamState(null);
       }
@@ -159,17 +159,26 @@ export function useStory() {
     async (rawText: string) => {
       if (!storyState || streamState?.isStreaming || storyComplete) return false;
 
+      const thread = getActiveThread(storyState);
+      if (!thread || !isThreadWritable(thread)) return false;
+
       const text = rawText.trim();
-      if (text.length < MIN_ACTION_LEN || text.length > MAX_ACTION_LEN) {
+      const userInput = parseUserInput(text);
+      if (
+        userInputEffectiveLength(userInput) < MIN_ACTION_LEN ||
+        text.length > MAX_ACTION_LEN
+      ) {
         return false;
       }
 
-      const withAction = recordUserAction(storyState, text);
-      setStoryState({ ...withAction, attitudeCards: [] });
-      setStreamState(createInitialStreamState(withAction.turnIndex));
+      const withAction = recordUserAction(storyState, userInput);
+      setStoryState(withAction);
+      setStreamState(
+        createInitialStreamState(withAction.turnIndex, withAction.activeThreadId),
+      );
 
       try {
-        await runNpcTurn(withAction, text);
+        await runNpcTurn(withAction, userInput);
       } catch {
         setStreamState(null);
       }
@@ -177,6 +186,24 @@ export function useStory() {
       return true;
     },
     [storyState, streamState, storyComplete, runNpcTurn],
+  );
+
+  const selectThread = useCallback((threadId: string) => {
+    setStoryState((prev) => {
+      if (!prev) return prev;
+      return switchActiveThread(prev, threadId);
+    });
+    setStreamState(null);
+  }, []);
+
+  const openPrivateChat = useCallback(
+    (npcName: string) => {
+      if (!storyState) return;
+      const protagonist = storyState.config.protagonistName.trim();
+      setStoryState(ensurePrivateThread(storyState, npcName, protagonist));
+      setStreamState(null);
+    },
+    [storyState],
   );
 
   const resetStory = useCallback(() => {
@@ -191,8 +218,12 @@ export function useStory() {
     setShowEndingScreen(true);
   }, []);
 
+  const activeThread = storyState ? getActiveThread(storyState) : undefined;
+  const committedLines = storyState
+    ? getThreadLines(storyState, storyState.activeThreadId)
+    : [];
+
   const isStreaming = streamState?.isStreaming ?? false;
-  const committedLines = storyState?.scriptLines ?? [];
   const isOpeningStream = isStreaming && committedLines.length === 0;
 
   const partialLines = streamingLines(
@@ -206,22 +237,28 @@ export function useStory() {
       ? streamState.background
       : storyState?.background;
 
-  const attitudeCards =
-    isStreaming && streamState?.attitudeCards?.length
-      ? streamState.attitudeCards
-      : (storyState?.attitudeCards ?? []);
+  const mood = isStreaming && streamState?.mood
+    ? streamState.mood
+    : storyState
+      ? getActiveMood(storyState)
+      : 'neutral';
 
   const hasPendingStreamLine = Boolean(streamState?.liveTail?.trim());
+  const canWriteActiveThread = Boolean(
+    activeThread && isThreadWritable(activeThread) && !storyComplete,
+  );
 
   return {
     storyState,
+    activeThread,
     displayBackground,
     committedLines,
     partialLines,
     streamState,
-    attitudeCards,
+    mood,
     hasPendingStreamLine,
     isOpeningStream,
+    canWriteActiveThread,
     loading: isStreaming,
     isStreaming,
     storyComplete,
@@ -229,10 +266,10 @@ export function useStory() {
     leaveStory,
     startStory,
     submitAction,
+    selectThread,
+    openPrivateChat,
     resetStory,
     minActionLen: MIN_ACTION_LEN,
     maxActionLen: MAX_ACTION_LEN,
   };
 }
-
-export { toPlayerAction };

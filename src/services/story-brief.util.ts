@@ -202,6 +202,41 @@ export function buildCharacterProfileMapFromLines(
   return map;
 }
 
+function isMentionableNpc(name: string, protagonistName?: string): boolean {
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  return !isProtagonistName(trimmed, protagonistName);
+}
+
+/** @ 提及候选：CAST 登记 + 对白中出现过的 NPC（含新登场） */
+export function collectMentionCandidates(
+  characterProfiles: Map<string, RelationItem>,
+  lines: ScriptLine[],
+  protagonistName: string,
+  extraNames: string[] = [],
+): string[] {
+  const seen = new Set<string>();
+
+  for (const item of characterProfiles.values()) {
+    if (item.isProtagonist) continue;
+    const name = item.name.trim();
+    if (isMentionableNpc(name, protagonistName)) seen.add(name);
+  }
+
+  for (const line of lines) {
+    if (line.kind !== 'msg' || !line.sender?.trim()) continue;
+    const sender = line.sender.trim();
+    if (isMentionableNpc(sender, protagonistName)) seen.add(sender);
+  }
+
+  for (const name of extraNames) {
+    const trimmed = name.trim();
+    if (isMentionableNpc(trimmed, protagonistName)) seen.add(trimmed);
+  }
+
+  return [...seen].sort((a, b) => a.localeCompare(b, 'zh-CN'));
+}
+
 /** 合并人物表并去重，保证主角只出现一次 */
 export function buildRelationList(
   profiles: Map<string, RelationItem>,
@@ -242,6 +277,21 @@ export function buildRelationList(
   }
 
   return items;
+}
+
+/** 人物简介一行文案：优先 headline + description，raw 仅作兜底 */
+export function formatRelationSummary(item: RelationItem): string {
+  const headline = item.headline.trim();
+  const description = item.description.trim();
+  if (headline || description) {
+    return [headline, description].filter(Boolean).join('，');
+  }
+
+  const raw = item.raw.trim();
+  if (!raw) return '';
+
+  const colonIdx = raw.search(/[：:]/);
+  return colonIdx >= 0 ? raw.slice(colonIdx + 1).trim() : raw;
 }
 
 export function lookupCharacterProfile(

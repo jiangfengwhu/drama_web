@@ -4,6 +4,8 @@ export const GUIDE_LINE = 'GUIDE:';
 export const GUIDE_FIELD = {
   TITLE: 'TITLE',
   PROLOGUE: 'PROLOGUE',
+  /** 电影场景 heading：slugline（环境氛围仅 SCENE: 行） */
+  SCENE_HEAD: 'SCENE_HEAD',
   /** 人物介绍：· 名字：身份/关系，换行分隔 */
   CAST: 'CAST',
 } as const;

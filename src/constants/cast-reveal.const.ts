@@ -1,8 +1,12 @@
 import { GUIDE_FIELD, GUIDE_LIMITS } from './guide-format.const';
 import { mergeCastEntries } from '../services/guide-text.util';
 
-/** 开场 GUIDE 仅含 TITLE + PROLOGUE；CAST 在人物首次登场时逐条揭露 */
-export const OPENING_GUIDE_FIELDS = [GUIDE_FIELD.TITLE, GUIDE_FIELD.PROLOGUE] as const;
+/** 开场 GUIDE 仅含 TITLE + PROLOGUE + SCENE_HEAD(slugline)；CAST 在人物首次登场时逐条揭露 */
+export const OPENING_GUIDE_FIELDS = [
+  GUIDE_FIELD.TITLE,
+  GUIDE_FIELD.PROLOGUE,
+  GUIDE_FIELD.SCENE_HEAD,
+] as const;
 
 export const CAST_ENTRY_FORMAT = `· 姓名：表面身份/立场；暗线：主角尚不知的真实私欲或秘密`;
 
@@ -20,7 +24,7 @@ export const CAST_REVEAL_RULES = `【人物渐进揭露 — CAST 协议】
 export function buildCastRevealRulesBlock(protagonistName: string): string {
   const protagonist = protagonistName.trim();
   return `${CAST_REVEAL_RULES}
-6. 主角「${protagonist}」已由用户设定；对白中固定用 MSG:你，禁止为其输出 GUIDE: CAST。`;
+7. 主角「${protagonist}」已由用户设定；对白中固定用 MSG:你，禁止为其输出 GUIDE: CAST。`;
 }
 
 /** 合并主角与已登记 NPC，供 user message 末尾注入 */

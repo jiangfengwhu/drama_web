@@ -44,6 +44,9 @@ function resolveGuideField(fieldRaw: string): keyof GuideSnapshot | null {
     case GUIDE_FIELD.CAST:
     case 'RELATIONS':
       return 'CAST';
+    case GUIDE_FIELD.SCENE_HEAD:
+    case 'SCENE_HEAD':
+      return 'SCENE_HEAD';
     default:
       return null;
   }

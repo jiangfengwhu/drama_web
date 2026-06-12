@@ -1,8 +1,6 @@
-import {
-  ATTITUDE_CARD_COUNT_MAX,
-  ATTITUDE_CARD_COUNT_MIN,
-} from '../constants/interaction.const';
+import type { UserTurnInput } from '../types/user-input.types';
 import { TURN_HISTORY_LINE_LIMIT } from '../constants/game.const';
+import { formatUserInputForPrompt } from './user-input.util';
 import {
   SCRIPT_FIELD_SEP,
   SCRIPT_LINE,
@@ -16,8 +14,10 @@ import {
   type GuideSnapshot,
 } from './guide-text.util';
 import type { ScriptLine } from '../types/script.types';
+import type { SceneCutPayload } from '../types/story-scene.types';
 import type { SceneMood } from '../types/story.types';
 import type { StoryTimelineItem } from '../types/story-timeline.types';
+import { parseSceneCutMeta } from './scene-meta.util';
 
 const PROTOCOL_TAGS = ['SCENE', 'NARR', 'MSG', 'ROLE'] as const;
 type ProtocolTag = (typeof PROTOCOL_TAGS)[number];
@@ -25,7 +25,7 @@ type ProtocolTag = (typeof PROTOCOL_TAGS)[number];
 export interface TurnMetaSnapshot {
   mood?: SceneMood;
   isComplete?: boolean;
-  attitudeCards?: string[];
+  sceneCut?: SceneCutPayload;
 }
 
 const META_PREFIXES = [
@@ -93,8 +93,8 @@ export function parseTurnMetaLine(raw: string): TurnMetaSnapshot | null {
   const completeMatch = trimmed.match(/^COMPLETE\s*[：:]\s*(.+)$/i);
   if (completeMatch) return { isComplete: parseYesNo(completeMatch[1]) };
 
-  const cardText = parseCardLine(trimmed);
-  if (cardText) return { attitudeCards: [cardText] };
+  const sceneCut = parseSceneCutMeta(trimmed);
+  if (sceneCut) return { sceneCut };
 
   return null;
 }
@@ -103,39 +103,11 @@ export function mergeTurnMetaSnapshots(
   base: TurnMetaSnapshot,
   patch: TurnMetaSnapshot,
 ): TurnMetaSnapshot {
-  const attitudeCards =
-    patch.attitudeCards !== undefined
-      ? [...(base.attitudeCards ?? []), ...patch.attitudeCards]
-      : base.attitudeCards;
-
   return {
     ...base,
     ...patch,
-    attitudeCards,
+    sceneCut: patch.sceneCut ?? base.sceneCut,
   };
-}
-
-function appendAttitudeCard(
-  turnMeta: TurnMetaSnapshot,
-  text: string,
-): TurnMetaSnapshot {
-  const trimmed = text.trim();
-  if (!trimmed) return turnMeta;
-  return mergeTurnMetaSnapshots(turnMeta, { attitudeCards: [trimmed] });
-}
-
-function isCardBlockTerminator(trimmed: string): boolean {
-  if (/^COMPLETE\s*[：:]/i.test(trimmed)) return true;
-  if (matchProtocolTag(normalizeProtocolLine(trimmed))) return true;
-  if (parseGuideLine(trimmed)) return true;
-  return false;
-}
-
-/** 解析 CARD: 情绪滑动条台词行（不进入聊天展示） */
-export function parseCardLine(raw: string): string | null {
-  const trimmed = raw.trim().replace(/^[-*•]\s*/, '');
-  const match = trimmed.match(/^CARD\s*[：:]\s*(.+)$/i);
-  return match?.[1]?.trim() || null;
 }
 
 /** 剥离旧协议遗留的括号旁白，统一为纯台词展示 */
@@ -146,70 +118,6 @@ function normalizeMsgDialogue(message: string): string {
   const dialogue = legacy[2]?.trim() ?? '';
   if (dialogue) return dialogue;
   return legacy[1]?.trim() ?? trimmed;
-}
-
-export function normalizeAttitudeCards(
-  cards: string[] | undefined,
-  _audience: 'male' | 'female' = 'male',
-): string[] {
-  const unique = [...new Set(cards?.map((c) => c.trim()).filter(Boolean) ?? [])];
-  if (unique.length <= ATTITUDE_CARD_COUNT_MAX) return unique;
-
-  return Array.from({ length: ATTITUDE_CARD_COUNT_MAX }, (_, i) => {
-    const idx = Math.round((i / (ATTITUDE_CARD_COUNT_MAX - 1)) * (unique.length - 1));
-    return unique[idx];
-  });
-}
-
-export function isAttitudeCardCountValid(count: number): boolean {
-  return count >= ATTITUDE_CARD_COUNT_MIN && count <= ATTITUDE_CARD_COUNT_MAX;
-}
-
-/** 从 MOOD 与 COMPLETE 之间兜底提取 CARD（须先出现 CARD: 行，后续裸行才可续行） */
-export function extractAttitudeCardsFromRaw(scriptRaw: string): string[] {
-  const rows = scriptRaw.split('\n');
-  let afterMood = false;
-  let inCardContinuation = false;
-  const cards: string[] = [];
-
-  for (const line of rows) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    if (/^MOOD\s*[：:]/i.test(trimmed)) {
-      afterMood = true;
-      inCardContinuation = false;
-      continue;
-    }
-    if (/^COMPLETE\s*[：:]/i.test(trimmed)) break;
-    if (!afterMood) continue;
-
-    const cardFromPrefix = parseCardLine(trimmed);
-    if (cardFromPrefix) {
-      cards.push(cardFromPrefix);
-      inCardContinuation = true;
-      continue;
-    }
-
-    if (inCardContinuation && !isCardBlockTerminator(trimmed)) {
-      cards.push(trimmed);
-      continue;
-    }
-
-    inCardContinuation = false;
-  }
-
-  return normalizeAttitudeCards(cards);
-}
-
-/** 解析 + 兜底提取态度卡片 */
-export function resolveAttitudeCards(
-  scriptRaw: string,
-  cards?: string[],
-): string[] {
-  const parsed = normalizeAttitudeCards(cards);
-  if (parsed.length > 0) return parsed;
-  return extractAttitudeCardsFromRaw(scriptRaw);
 }
 
 function isMetaLine(trimmed: string): boolean {
@@ -429,8 +337,6 @@ export function parseScriptStream(buffer: string): {
   let guide: GuideSnapshot = {};
   let turnMeta: TurnMetaSnapshot = {};
   let pendingGuideField: keyof GuideSnapshot | null = null;
-  /** 仅在一行 CARD: 出现之后，才将后续裸行视为 CARD 续行 */
-  let inCardContinuation = false;
 
   for (const line of parts) {
     const trimmed = line.trim();
@@ -441,7 +347,6 @@ export function parseScriptStream(buffer: string): {
 
     const guidePart = parseGuideLine(line);
     if (guidePart) {
-      inCardContinuation = false;
       const field = Object.keys(guidePart)[0] as keyof GuideSnapshot;
       if (field === 'CAST') {
         guide = appendGuideField(guide, 'CAST', guidePart.CAST ?? '');
@@ -470,18 +375,6 @@ export function parseScriptStream(buffer: string): {
     const turnMetaPart = parseTurnMetaLine(line);
     if (turnMetaPart) {
       turnMeta = mergeTurnMetaSnapshots(turnMeta, turnMetaPart);
-      if (turnMetaPart.mood !== undefined) inCardContinuation = false;
-      if (turnMetaPart.attitudeCards?.length) inCardContinuation = true;
-      if (turnMetaPart.isComplete !== undefined) inCardContinuation = false;
-      continue;
-    }
-
-    if (isCardBlockTerminator(trimmed)) {
-      inCardContinuation = false;
-    }
-
-    if (inCardContinuation && !isCardBlockTerminator(trimmed)) {
-      turnMeta = appendAttitudeCard(turnMeta, trimmed);
       continue;
     }
 
@@ -531,10 +424,12 @@ export function scriptLinesToTimeline(
   lines: ScriptLine[],
   protagonistName: string,
   idOffset = 0,
+  threadKey = '',
 ): StoryTimelineItem[] {
+  const idPrefix = threadKey ? `${threadKey}-` : '';
   return lines
     .map((line, index) => {
-      const id = `tl-${idOffset + index}`;
+      const id = `${idPrefix}tl-${idOffset + index}`;
       if (line.kind === 'scene') {
         return { id, kind: 'scene' as const, text: line.text ?? '' };
       }
@@ -653,7 +548,28 @@ export function formatChatHistory(
     .join('\n');
 }
 
-/** 回合 prompt 用：仅保留最近若干行，避免上下文过长挤占 CARD 输出 */
+/** 回合 prompt 用：仅 MSG/NARR，不含 SCENE（场景已在 thread 头展示） */
+export function formatRecentDialogueHistory(
+  lines: ScriptLine[],
+  protagonistName: string,
+  lineLimit: number = TURN_HISTORY_LINE_LIMIT,
+): string {
+  const relevant = lines.filter(
+    (line) => line.kind === 'msg' || line.kind === 'narr',
+  );
+  const recent =
+    lineLimit > 0 && relevant.length > lineLimit
+      ? relevant.slice(-lineLimit)
+      : relevant;
+  if (recent.length === 0) return '';
+  const formatted = formatChatHistory(recent, protagonistName);
+  if (lineLimit > 0 && relevant.length > lineLimit) {
+    return `（摘录最近 ${lineLimit} 条）\n${formatted}`;
+  }
+  return formatted;
+}
+
+/** 回合 prompt 用：仅保留最近若干行，避免上下文过长 */
 export function formatRecentChatHistory(
   lines: ScriptLine[],
   protagonistName: string,
@@ -671,10 +587,6 @@ export function formatRecentChatHistory(
     return `（仅摘录最近 ${lineLimit} 行）\n${formatted}`;
   }
   return formatted;
-}
-
-function formatMsgLine(line: ScriptLine): string {
-  return (line.message ?? '').trim();
 }
 
 /** 近 2 轮是否仅原地对峙、无 NARR/局面变化 — 触发第三力量强制打断 */
@@ -715,52 +627,52 @@ export function detectConfrontationStagnation(
 export function buildTurnContinuityPrompt(
   scriptLines: ScriptLine[],
   protagonistName: string,
-  userAction: string,
+  userInput: UserTurnInput,
 ): string {
-  const recentMsgs = scriptLines.filter((l) => l.kind === 'msg').slice(-6);
-  const lastProtagonist = [...recentMsgs]
-    .reverse()
-    .find((l) => isProtagonistSender(l.sender ?? '', protagonistName));
-  const lastProtagonistLine = lastProtagonist
-    ? formatMsgLine(lastProtagonist)
-    : '';
-
-  const intent = userAction.trim();
   const stagnation = detectConfrontationStagnation(scriptLines, protagonistName);
   const thirdForceRule = stagnation
     ? `⑤ 【强制】近 2 轮对峙无变局：本回合须先写 1 行 NARR 引入外部打断（闯入/来电/警报/物件落地/倒计时），再写 MSG:你|，禁止继续原地对骂。`
     : '⑤ NARR 仅在有外部打断或关键新画面时写 1 行；无则省略。';
-  const recentBlock =
-    recentMsgs.length > 0
-      ? recentMsgs
-          .map((line) => {
-            const who = isProtagonistSender(line.sender ?? '', protagonistName)
-              ? '你'
-              : line.sender;
-            return `· ${who}：${formatMsgLine(line)}`;
-          })
-          .join('\n')
-      : '（尚无对白）';
 
-  return `【本回合接戏锚点 — 违反则重写】
-用户选中主角意图（态度滑块）：「${intent}」
-${lastProtagonistLine ? `主角上一轮：「${lastProtagonistLine}」` : ''}
+  const inputBlock = formatUserInputForPrompt(userInput);
+
+  return `【本回合接戏 — 违反则重写】
+${inputBlock}
 ${stagnation ? '⚠ 检测到对峙僵持：本回合必须破局，禁止循环争吵。' : ''}
 
 【反停滞三大铁律 — 本回合全部兑现】
-1. 情绪行为化：MSG:你| 纯台词须让局面偏移（承诺、威胁、揭底、点名物件/时限），禁止纯放狠话与括号旁白。
+1. 情绪行为化：MSG:你| 以用户台词为主，行为指令写进 NARR 或他人反应，禁止括号旁白。
 2. NPC 泄密：首条或次条 NPC 须泄露具体秘密、抛恶毒交易或暴露软肋，禁止只对骂防御。
 3. 第三方打断：${stagnation ? '已僵持，NARR 强制写 1 行外部变量打断。' : '若对白将陷入复读，用 NARR 引入局外变量。'}
 
 执行顺序：
-① ${stagnation ? 'NARR: 外部打断（1 行）→ ' : ''}MSG:你|… 艺术化上述意图为纯台词，保留核心名词/物件/立场，让玩家从话里脑补动作。
+① ${stagnation ? 'NARR: 外部打断（1 行）→ ' : ''}MSG:你|… 以用户台词为正文（可极轻微润色），行为指令勿写进括号。
 ② 首条 NPC 当场接「你」——局势立刻偏移，须含信息增量（秘密/交易/软肋）。
-③ ≥1 条 NPC↔NPC 交锋；最后一条 MSG 须制造下一档 CARD 钩子（新筹码/新危险）。
+③ ≥1 条 NPC↔NPC 交锋；最后一条 MSG 须制造下一回合输入钩子（新筹码/新危险）。
 ④ 禁止幻词反问；禁止「你等着」「别逼我」式空转；同回合不重复同一施压角度。
 ${thirdForceRule}
+⑤ 接词须与上方【近期对白】一致，禁止复读。`;
+}
 
-近期对白（接词不得矛盾，禁止复读）：
-${recentBlock}`;
+/** 私聊回合：承接场景群聊，双人密谈 */
+export function buildPrivateTurnContinuityPrompt(
+  _privateLines: ScriptLine[],
+  _protagonistName: string,
+  userInput: UserTurnInput,
+  npcName: string,
+): string {
+  const inputBlock = formatUserInputForPrompt(userInput);
+
+  return `【密谈接戏 — 须与场景群聊连贯】
+${inputBlock}
+密谈对象：${npcName}
+说明：你们暂离群聊中心，但同一场景、同一时刻仍在进行；对白须能接回群聊里的筹码/对峙。
+
+执行顺序：
+① MSG:你|… 以用户台词为正文；行为指令体现于措辞或 NARR，勿写括号旁白。
+② MSG: ${npcName}|… 1-3 条：更私密、更真实；须给出群聊里听不到的信息、条件或威胁。
+③ 禁止 NARR 群戏、禁止第三人、禁止转场；最后一条须让玩家想继续密谈或回群聊出牌。
+④ 接词须与上方对话记录一致，禁止复读。`;
 }
 
 export function extractSceneText(lines: ScriptLine[]): string | undefined {

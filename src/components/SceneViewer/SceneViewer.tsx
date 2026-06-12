@@ -1,83 +1,83 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { FREE_FORM_MODE_LABEL } from '../../constants/interaction.const';
 import { useBubbleRevealQueue } from '../../hooks/useBubbleRevealQueue';
-import type { RelationItem } from '../../services/story-brief.util';
 import {
   buildCharacterProfileMap,
   buildCharacterProfileMapFromLines,
-  buildRelationList,
+  collectMentionCandidates,
   mergeCharacterProfileMaps,
-  buildTurnLabel,
 } from '../../services/story-brief.util';
+import {
+  getSceneForThread,
+  getSceneGroupThreadLines,
+} from '../../services/story-thread.util';
 import { scriptLinesToTimeline } from '../../services/script-text.util';
+import type { ChatThread } from '../../types/story-scene.types';
 import type { ScriptLine } from '../../types/script.types';
-import type { SceneMood, StoryBackground } from '../../types/story.types';
-import { ChatPrologue } from './ChatPrologue';
-import { EmotionSliderInput } from './EmotionSliderInput';
+import type { SceneMood, StoryBackground, StoryState } from '../../types/story.types';
+import { ChatThreadHeader } from './ChatThreadHeader';
+import { ConversationListPanel } from './ConversationListPanel';
+import { ConversationDrawer } from './ConversationDrawer';
 import { ChatComposer } from './ChatComposer';
 import { ChatTimelineLoading } from './ChatTimelineLoading';
 import { StoryEndBanner } from './StoryEndBanner';
-import { SceneProfilePanel } from './SceneProfilePanel';
 import { StoryTimeline } from './StoryTimeline';
 import './SceneViewer.css';
 import './StoryTimeline.css';
-import './ChatPrologue.css';
-import './SceneProfilePanel.css';
 import './CharacterAvatar.css';
 import './ChatComposer.css';
 import './StoryEndBanner.css';
-import './EmotionSliderInput.css';
+import './ConversationListPanel.css';
+import './ConversationDrawer.css';
+import './ChatThreadHeader.css';
 
 interface SceneViewerProps {
+  storyState: StoryState;
   background: StoryBackground;
+  activeThread?: ChatThread;
   committedLines: ScriptLine[];
   partialLines: ScriptLine[];
   turnIndex: number;
   protagonistName: string;
-  themeTitle?: string;
   mood?: SceneMood;
   isStreaming?: boolean;
   hasPendingStreamLine?: boolean;
+  canWriteActiveThread?: boolean;
   showInput?: boolean;
   storyComplete?: boolean;
   onLeaveStory?: () => void;
   inputDisabled?: boolean;
-  attitudeCards?: string[];
   minActionLen: number;
   maxActionLen: number;
-  audience: 'male' | 'female';
   onSubmit?: (text: string) => Promise<boolean>;
+  onSelectThread: (threadId: string) => void;
+  onPrivateChat: (npcName: string) => void;
 }
 
 export function SceneViewer({
+  storyState,
   background,
+  activeThread,
   committedLines,
   partialLines,
   turnIndex,
   protagonistName,
-  themeTitle,
   mood = 'neutral',
   isStreaming = false,
   hasPendingStreamLine = false,
+  canWriteActiveThread = true,
   showInput = false,
   storyComplete = false,
   onLeaveStory,
   inputDisabled = false,
-  attitudeCards = [],
   minActionLen,
   maxActionLen,
-  audience,
   onSubmit,
+  onSelectThread,
+  onPrivateChat,
 }: SceneViewerProps) {
   const messagesRef = useRef<HTMLDivElement>(null);
-  const [freeFormMode, setFreeFormMode] = useState(false);
   const [awaitingTurn, setAwaitingTurn] = useState(false);
-  const [hoveredProfile, setHoveredProfile] = useState<RelationItem | null>(
-    null,
-  );
-
-  const turnLabel = useMemo(() => buildTurnLabel(turnIndex), [turnIndex]);
-  const guideStreaming = isStreaming && committedLines.length === 0;
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const characterProfiles = useMemo(() => {
     const fromGuide = buildCharacterProfileMap(
@@ -91,24 +91,56 @@ export function SceneViewer({
     return mergeCharacterProfileMaps(fromGuide, fromDialogue);
   }, [background.characters, committedLines, protagonistName]);
 
-  const relationList = useMemo(
-    () => buildRelationList(characterProfiles, protagonistName),
-    [characterProfiles, protagonistName],
-  );
+  const mentionCandidates = useMemo(() => {
+    if (!activeThread) return [];
+
+    const scene = getSceneForThread(storyState, activeThread);
+    const groupLines = scene ? getSceneGroupThreadLines(storyState, scene) : [];
+    const dialogueLines = [...committedLines, ...partialLines, ...groupLines];
+
+    return collectMentionCandidates(
+      characterProfiles,
+      dialogueLines,
+      protagonistName,
+      [
+        ...(scene?.presentCast ?? []),
+        ...activeThread.participantNames,
+      ],
+    );
+  }, [
+    activeThread,
+    storyState,
+    protagonistName,
+    characterProfiles,
+    committedLines,
+    partialLines,
+  ]);
 
   useEffect(() => {
-    if (!isStreaming) return;
-    setFreeFormMode(false);
-  }, [isStreaming]);
+    setAwaitingTurn(false);
+    setDrawerOpen(false);
+  }, [storyState.activeThreadId]);
 
-  useEffect(() => {
-    if (isStreaming || attitudeCards.length === 0) return;
-    setFreeFormMode(false);
-  }, [attitudeCards, isStreaming]);
+  const handleSelectThread = (threadId: string) => {
+    onSelectThread(threadId);
+    setDrawerOpen(false);
+  };
+
+  const convListProps = {
+    storyState,
+    background,
+    activeThreadId: storyState.activeThreadId,
+    protagonistName,
+    prologueLoading:
+      isStreaming && committedLines.length === 0 && !background.prologue.trim(),
+    onSelectThread: handleSelectThread,
+  };
+
+  const threadId = storyState.activeThreadId;
 
   const committedTimeline = useMemo(
-    () => scriptLinesToTimeline(committedLines, protagonistName, 0),
-    [committedLines, protagonistName],
+    () => scriptLinesToTimeline(committedLines, protagonistName, 0, threadId),
+    [committedLines, protagonistName, threadId],
   );
 
   const streamingTimeline = useMemo(
@@ -117,8 +149,9 @@ export function SceneViewer({
         partialLines,
         protagonistName,
         committedLines.length,
+        threadId,
       ),
-    [partialLines, protagonistName, committedLines.length],
+    [partialLines, protagonistName, committedLines.length, threadId],
   );
 
   const timelineTarget = useMemo(
@@ -135,6 +168,7 @@ export function SceneViewer({
       streamingTimeline,
       isStreaming,
       hasPendingStreamLine,
+      threadId,
     );
 
   useEffect(() => {
@@ -143,49 +177,32 @@ export function SceneViewer({
 
   const canInteract =
     showInput &&
+    canWriteActiveThread &&
     !storyComplete &&
     !isStreaming &&
     !awaitingTurn &&
     interactionReady &&
     Boolean(onSubmit);
-  const showEmotionSlider =
-    canInteract && attitudeCards.length > 0 && !freeFormMode;
-  const showComposer = canInteract && freeFormMode;
+  const showComposer = canInteract;
   const showEndBanner =
     storyComplete && interactionReady && Boolean(onLeaveStory);
 
   const showLoading =
     awaitingTurn || (!interactionReady && (isStreaming || showQueueLoading));
   const reserveDock =
-    showInput || storyComplete || isStreaming || awaitingTurn;
+    (showInput && canWriteActiveThread) || storyComplete || isStreaming || awaitingTurn;
 
   useEffect(() => {
     if (!messagesRef.current) return;
     messagesRef.current.scrollTop = messagesRef.current.scrollHeight;
-  }, [visibleItems.length, showLoading, timelineTarget.length, turnIndex]);
-
-  const handleSubmitEmotionLine = async (text: string) => {
-    if (!onSubmit) return;
-    setFreeFormMode(false);
-    setAwaitingTurn(true);
-    try {
-      const ok = await onSubmit(text);
-      if (!ok) setAwaitingTurn(false);
-    } catch {
-      setAwaitingTurn(false);
-    }
-  };
+  }, [visibleItems.length, showLoading, timelineTarget.length, turnIndex, storyState.activeThreadId]);
 
   const handleComposerSubmit = async (text: string) => {
     if (!onSubmit) return false;
     setAwaitingTurn(true);
     try {
       const ok = await onSubmit(text);
-      if (ok) {
-        setFreeFormMode(false);
-      } else {
-        setAwaitingTurn(false);
-      }
+      if (!ok) setAwaitingTurn(false);
       return ok;
     } catch {
       setAwaitingTurn(false);
@@ -195,38 +212,47 @@ export function SceneViewer({
 
   return (
     <div className={`scene-viewer scene-viewer--${mood}`}>
-      <div className="scene-viewer__profile-panel">
-        <SceneProfilePanel
-          background={background}
-          themeTitle={themeTitle}
-          turnLabel={turnLabel}
-          relations={relationList}
-          hoveredProfile={hoveredProfile}
-          loading={guideStreaming}
-        />
+      <div className="scene-viewer__sidebar">
+        <ConversationListPanel {...convListProps} />
       </div>
+
+      <ConversationDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      >
+        <ConversationListPanel {...convListProps} />
+      </ConversationDrawer>
 
       <div
         className={`scene-viewer__chat-panel${
           reserveDock ? ' scene-viewer__chat-panel--dock-reserved' : ''
         }`}
       >
+        <ChatThreadHeader
+          storyState={storyState}
+          thread={activeThread}
+          protagonistName={protagonistName}
+          characterProfiles={characterProfiles}
+          onOpenDrawer={() => setDrawerOpen(true)}
+        />
+
         <div className="scene-viewer__messages" ref={messagesRef}>
           <div className="scene-viewer__chat-flow">
-            <ChatPrologue
-              background={background}
-              themeTitle={themeTitle}
-              turnLabel={turnLabel}
-              loading={guideStreaming}
-            />
             <StoryTimeline
               items={visibleItems}
+              threadId={threadId}
               characterProfiles={characterProfiles}
               protagonistName={protagonistName}
-              onProfileHover={setHoveredProfile}
+              onPrivateChat={onPrivateChat}
             />
           </div>
         </div>
+
+        {!canWriteActiveThread && activeThread?.status === 'readonly' ? (
+          <div className="scene-viewer__readonly-hint" aria-live="polite">
+            该场景已完结，仅可查看历史消息
+          </div>
+        ) : null}
 
         <div className="scene-viewer__chat-dock">
           <div
@@ -240,41 +266,17 @@ export function SceneViewer({
 
           <div
             className={`scene-viewer__dock-layer${
-              showEmotionSlider ? ' scene-viewer__dock-layer--visible' : ''
-            }`}
-            aria-hidden={!showEmotionSlider}
-          >
-            <EmotionSliderInput
-              key={turnIndex}
-              lines={attitudeCards}
-              disabled={inputDisabled}
-              onSubmit={(text) => void handleSubmitEmotionLine(text)}
-              onFreeForm={() => setFreeFormMode(true)}
-            />
-          </div>
-
-          <div
-            className={`scene-viewer__dock-layer${
               showComposer ? ' scene-viewer__dock-layer--visible' : ''
             }`}
             aria-hidden={!showComposer}
           >
             <div className={`chat-composer-bar${showComposer ? ' chat-composer-bar--enter' : ''}`}>
-              <div className="chat-composer-bar__header">
-                <button
-                  type="button"
-                  className="emotion-slider__free-btn emotion-slider__free-btn--active"
-                  disabled={inputDisabled}
-                  onClick={() => setFreeFormMode(false)}
-                >
-                  {FREE_FORM_MODE_LABEL}
-                </button>
-              </div>
               <ChatComposer
+                key={`${storyState.activeThreadId}-${turnIndex}`}
                 disabled={inputDisabled}
                 minLen={minActionLen}
                 maxLen={maxActionLen}
-                audience={audience}
+                mentionCandidates={mentionCandidates}
                 onSubmit={handleComposerSubmit}
               />
             </div>

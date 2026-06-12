@@ -17,19 +17,22 @@ export function StoryPlayPage() {
   const { tickets } = useAdmissionTicket();
   const {
     storyState,
+    activeThread,
     displayBackground,
     committedLines,
     partialLines,
-    streamState,
     loading,
     isStreaming,
     storyComplete,
     showEndingScreen,
     leaveStory,
-    attitudeCards,
+    mood,
     hasPendingStreamLine,
+    canWriteActiveThread,
     startStory,
     submitAction,
+    selectThread,
+    openPrivateChat,
     resetStory,
     minActionLen,
     maxActionLen,
@@ -85,8 +88,8 @@ export function StoryPlayPage() {
       <Layout tickets={tickets}>
         <div className="story-play__loading-screen">
           <div className="story-play__loading-ring" />
-          <p>正在进入群聊…</p>
-          <span className="story-play__loading-sub">AI 正在布置场景</span>
+          <p>正在进入故事…</p>
+          <span className="story-play__loading-sub">AI 正在布置第一场戏</span>
         </div>
       </Layout>
     );
@@ -96,24 +99,26 @@ export function StoryPlayPage() {
     <Layout tickets={tickets}>
       <div className="story-play">
         <SceneViewer
+          storyState={storyState}
           background={displayBackground ?? storyState.background}
+          activeThread={activeThread}
           committedLines={committedLines}
           partialLines={partialLines}
           turnIndex={storyState.turnIndex}
           protagonistName={config.protagonistName}
-          themeTitle={theme.title}
-          mood={streamState?.mood ?? storyState.mood}
+          mood={mood}
           isStreaming={isStreaming}
           hasPendingStreamLine={hasPendingStreamLine}
+          canWriteActiveThread={canWriteActiveThread}
           showInput={!storyComplete}
           storyComplete={storyComplete}
           onLeaveStory={leaveStory}
           inputDisabled={loading}
-          attitudeCards={attitudeCards}
           minActionLen={minActionLen}
           maxActionLen={maxActionLen}
-          audience={config.audience}
           onSubmit={submitAction}
+          onSelectThread={selectThread}
+          onPrivateChat={openPrivateChat}
         />
       </div>
     </Layout>

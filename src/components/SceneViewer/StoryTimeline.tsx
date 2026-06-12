@@ -15,9 +15,10 @@ import './CharacterAvatar.css';
 
 interface StoryTimelineProps {
   items: StoryTimelineItem[];
+  threadId: string;
   characterProfiles: Map<string, RelationItem>;
   protagonistName: string;
-  onProfileHover?: (profile: RelationItem | null) => void;
+  onPrivateChat?: (npcName: string) => void;
 }
 
 function bubbleThemeStyle(theme: AvatarTheme): React.CSSProperties {
@@ -42,13 +43,13 @@ function ChatBubble({
   characterProfiles,
   protagonistName,
   themeRegistry,
-  onProfileHover,
+  onPrivateChat,
 }: {
   item: StoryTimelineItem;
   characterProfiles: Map<string, RelationItem>;
   protagonistName: string;
   themeRegistry: AvatarThemeRegistry;
-  onProfileHover?: (profile: RelationItem | null) => void;
+  onPrivateChat?: (npcName: string) => void;
 }) {
   const isSelf = Boolean(item.isProtagonist);
   const senderName = item.sender ?? '未知';
@@ -86,10 +87,8 @@ function ChatBubble({
         <CharacterAvatar
           name={senderName}
           isProtagonist
-          profile={profile}
           theme={theme}
           align="right"
-          onProfileHover={onProfileHover}
         />
       </div>
     );
@@ -99,10 +98,11 @@ function ChatBubble({
     <div className="wechat-chat__row wechat-chat__row--other">
       <CharacterAvatar
         name={senderName}
-        profile={profile}
         theme={theme}
         align="left"
-        onProfileHover={onProfileHover}
+        onPrivateChat={
+          onPrivateChat ? () => onPrivateChat(displayName) : undefined
+        }
       />
       <div className="wechat-chat__other-body">{messageStack}</div>
     </div>
@@ -115,14 +115,14 @@ function TimelineEntry({
   characterProfiles,
   protagonistName,
   themeRegistry,
-  onProfileHover,
+  onPrivateChat,
 }: {
   item: StoryTimelineItem;
   animate: boolean;
   characterProfiles: Map<string, RelationItem>;
   protagonistName: string;
   themeRegistry: AvatarThemeRegistry;
-  onProfileHover?: (profile: RelationItem | null) => void;
+  onPrivateChat?: (npcName: string) => void;
 }) {
   const className = animate
     ? 'wechat-chat__entry wechat-chat__entry--pop'
@@ -143,7 +143,7 @@ function TimelineEntry({
         characterProfiles={characterProfiles}
         protagonistName={protagonistName}
         themeRegistry={themeRegistry}
-        onProfileHover={onProfileHover}
+        onPrivateChat={onPrivateChat}
       />
     </div>
   );
@@ -151,12 +151,13 @@ function TimelineEntry({
 
 export function StoryTimeline({
   items,
+  threadId,
   characterProfiles,
   protagonistName,
-  onProfileHover,
+  onPrivateChat,
 }: StoryTimelineProps) {
   const itemIds = useMemo(() => items.map((item) => item.id), [items]);
-  const shouldPop = useTimelinePopAnimation(itemIds);
+  const shouldPop = useTimelinePopAnimation(itemIds, threadId);
 
   const themeRegistry = useMemo(() => {
     const castNames: string[] = [];
@@ -190,7 +191,7 @@ export function StoryTimeline({
           characterProfiles={characterProfiles}
           protagonistName={protagonistName}
           themeRegistry={themeRegistry}
-          onProfileHover={onProfileHover}
+          onPrivateChat={onPrivateChat}
         />
       ))}
     </div>
